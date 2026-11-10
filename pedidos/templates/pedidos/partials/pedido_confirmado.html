@@ -1,0 +1,21 @@
+{% load static %}
+<div class="aparecer rounded-[2rem] bg-slate-900 px-6 py-12 text-center text-white sm:px-12" role="status">
+  <img src="{% static 'pedidos/img/chester-avatar.jpg' %}" alt="" class="mx-auto h-24 w-24 rounded-full ring-4 ring-collar-600">
+  <h3 data-foco tabindex="-1" class="mt-6 font-display text-3xl font-medium tracking-tight focus:outline-none sm:text-4xl">
+    ¡{{ cotizacion.nombre_perro }} tendrá su pastel!
+  </h3>
+  <p class="mx-auto mt-4 max-w-md text-stone-300">
+    Te estamos llevando a WhatsApp para confirmar con Melloco. Si no se abre solo, usa el botón.
+  </p>
+  <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+    <a href="{{ wa_url }}" target="_blank" rel="noopener"
+       class="inline-flex items-center gap-2.5 rounded-full bg-collar-600 px-7 py-4 font-extrabold text-white shadow-lg shadow-black/20 transition hover:bg-collar-700">
+      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.6-5.4A8.4 8.4 0 1 1 21 11.5Z"/></svg>
+      Abrir WhatsApp
+    </a>
+    <button type="button" hx-get="{% url 'pedidos:configurador' %}" hx-target="#configurador-panel"
+            class="rounded-full px-5 py-3 text-sm font-bold text-stone-300 transition hover:bg-white/10 hover:text-white">
+      Armar otro pastel
+    </button>
+  </div>
+</div>

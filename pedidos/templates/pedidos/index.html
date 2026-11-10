@@ -1,0 +1,229 @@
+{% load static %}<!doctype html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chester's | Pasteles para perritos</title>
+  <meta name="description" content="Pasteles saludables y artesanales para el cumpleaños de tu perrito. Inspirado por Chester, aprobado por Melloco.">
+  <meta name="theme-color" content="#F4E5D2">
+  <link rel="icon" type="image/png" href="{% static 'pedidos/img/favicon.png' %}">
+  <meta property="og:title" content="Chester's | Pasteles para perritos">
+  <meta property="og:description" content="Celebra su vida. Cada cumpleaños cuenta.">
+  <meta property="og:image" content="{% static 'pedidos/img/logo.jpg' %}">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  {# En producción: compilar Tailwind (django-tailwind o el CLI standalone) en vez del CDN. #}
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            // Tomados del logo: fondo crema y collar rojo de Chester.
+            crema: { DEFAULT: '#F4E5D2', 50: '#FBF6EF', 100: '#F8EEE2', 200: '#F4E5D2', 300: '#E9D1B3' },
+            collar: { 50: '#FEF2F2', 100: '#FDE3E2', 200: '#FBCBC9', 500: '#EF3B36', 600: '#D62828', 700: '#B21F1F', 800: '#8F1B1B' },
+          },
+          fontFamily: {
+            display: ['Fraunces', 'Georgia', 'serif'],
+            sans: ['Nunito', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js" defer></script>
+
+  <style>
+    @keyframes girar { to { transform: rotate(360deg); } }
+    .ruleta { animation: girar 40s linear infinite; }
+    .ruleta.htmx-request { animation-duration: .7s; }
+    @keyframes aparecer { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .htmx-added, .aparecer { animation: aparecer .35s ease-out both; }
+    button[disabled] { opacity: .6; cursor: progress; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .ruleta, .htmx-added, .aparecer { animation: none; }
+    }
+  </style>
+</head>
+
+<body class="bg-stone-50 font-sans text-slate-900 antialiased selection:bg-collar-100"
+      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+
+  {# ───────────────────────── NAV ───────────────────────── #}
+  <header class="sticky top-0 z-40 border-b border-stone-200/70 bg-stone-50/85 backdrop-blur-md">
+    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+      <a href="#inicio" class="flex items-center gap-3">
+        <img src="{% static 'pedidos/img/chester-avatar.jpg' %}" alt="" class="h-10 w-10 rounded-full ring-1 ring-stone-300">
+        <span class="font-display text-xl font-semibold tracking-tight">Chester's</span>
+      </a>
+      <nav class="hidden items-center gap-8 text-sm font-semibold text-slate-600 md:flex" aria-label="Principal">
+        <a href="#configurador" class="transition hover:text-slate-900">Arma su pastel</a>
+        <a href="#ruleta" class="transition hover:text-slate-900">Ruleta de Melloco</a>
+        <a href="#historia" class="transition hover:text-slate-900">Nuestra historia</a>
+      </nav>
+      <a href="#configurador" class="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-slate-700">Pedir</a>
+    </div>
+  </header>
+
+  <main>
+    {# ───────────────────────── 1. HERO ───────────────────────── #}
+    <section id="inicio" class="relative overflow-hidden">
+      <div class="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-20 pt-10 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:pb-28 lg:pt-20">
+        <div class="order-2 lg:order-1 lg:col-span-6">
+          <p class="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
+            <span class="h-1.5 w-1.5 rounded-full bg-collar-600"></span> Pastelería artesanal para perritos
+          </p>
+          <h1 class="mt-7 font-display text-5xl font-medium leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl">
+            Celebra su vida.<br>
+            <span class="italic text-collar-600">Cada cumpleaños cuenta.</span>
+          </h1>
+          <p class="mt-7 max-w-md text-lg leading-relaxed text-slate-600">
+            Pasteles saludables y artesanales. Inspirado por Chester, aprobado por Melloco 🐾
+          </p>
+
+          <div class="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
+            {# Scroll suave al configurador vía HTMX (sin JS funciona igual gracias al ancla). #}
+            <a href="#configurador"
+               hx-on:click="event.preventDefault();
+                            htmx.find('#configurador').scrollIntoView({behavior: 'smooth', block: 'start'});
+                            setTimeout(() => htmx.find('#configurador-panel input:not([type=hidden])')?.focus({preventScroll: true}), 700);"
+               class="group inline-flex items-center gap-3 rounded-full bg-collar-600 px-7 py-4 text-base font-extrabold text-white shadow-lg shadow-collar-600/25 transition hover:-translate-y-0.5 hover:bg-collar-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-collar-600/30">
+              Crear el pastel de mi perrito
+              <svg class="h-5 w-5 transition group-hover:translate-y-0.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4v12m0 0 5-5m-5 5-5-5"/></svg>
+            </a>
+            <a href="#historia" class="text-sm font-bold text-slate-700 underline decoration-stone-300 underline-offset-4 transition hover:decoration-slate-900">Conoce a Chester</a>
+          </div>
+
+          <ul class="mt-14 grid max-w-lg grid-cols-3 gap-4 border-t border-stone-200 pt-6 text-sm">
+            <li><span class="block font-display text-lg">Hecho</span><span class="text-slate-500">a pedido</span></li>
+            <li><span class="block font-display text-lg">Recetas</span><span class="text-slate-500">caseras</span></li>
+            <li><span class="block font-display text-lg">Melloco</span><span class="text-slate-500">control de calidad</span></li>
+          </ul>
+        </div>
+
+        <div class="order-1 lg:order-2 lg:col-span-6">
+          <div class="relative mx-auto max-w-sm sm:max-w-md lg:max-w-none">
+            <div class="absolute -inset-3 rotate-3 rounded-[2.75rem] bg-crema-300/60" aria-hidden="true"></div>
+            <div class="relative overflow-hidden rounded-[2.5rem] bg-crema shadow-2xl shadow-stone-400/30 ring-1 ring-black/5">
+              <img src="{% static 'pedidos/img/logo.jpg' %}" width="1000" height="914"
+                   alt="Chester, un schnauzer miniatura con collar rojo, frente a su pastel con forma de huesito. Chester's, pasteles para perritos."
+                   class="w-full">
+            </div>
+            <div class="absolute -bottom-8 left-4 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-xl ring-1 ring-black/5 sm:left-8">
+              <span class="grid h-9 w-9 place-items-center rounded-full bg-collar-600 text-white" aria-hidden="true">
+                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 10.5 3.2 3L15 6.5"/></svg>
+              </span>
+              <span class="text-sm leading-tight"><strong class="block">Aprobado por Melloco</strong><span class="text-slate-500">Director de Calidad</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {# ───────────────────────── 2. CONFIGURADOR ───────────────────────── #}
+    <section id="configurador" class="scroll-mt-16 border-y border-stone-200 bg-white" aria-labelledby="titulo-configurador">
+      <div class="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:py-28">
+        <div class="text-center">
+          <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-collar-600">El configurador</p>
+          <h2 id="titulo-configurador" class="mt-3 font-display text-4xl font-medium tracking-tight sm:text-5xl">Arma su pastel en 4 pasos</h2>
+          <p class="mx-auto mt-4 max-w-md text-slate-600">Elige receta y forma. Al final confirmas directamente con Melloco por WhatsApp.</p>
+        </div>
+        <div id="configurador-panel" class="mt-12 scroll-mt-24">
+          {% include "pedidos/partials/configurador.html" %}
+        </div>
+      </div>
+    </section>
+
+    {# ───────────────────────── 3. RULETA DE MELLOCO (LEADS) ───────────────────────── #}
+    <section id="ruleta" class="scroll-mt-16 bg-slate-900 text-stone-100" aria-labelledby="titulo-ruleta">
+      <div class="mx-auto grid max-w-6xl items-center gap-14 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:gap-20 lg:py-28">
+        <div>
+          <div class="relative h-40 w-40 sm:h-48 sm:w-48" aria-hidden="true">
+            <svg id="ruleta-rueda" class="ruleta h-full w-full drop-shadow-xl" viewBox="0 0 220 220">
+              <g stroke="#0f172a" stroke-width="2">
+                <path d="M110 110 L210 110 A100 100 0 0 1 180.7 180.7Z" fill="#D62828"/>
+                <path d="M110 110 L180.7 180.7 A100 100 0 0 1 110 210Z" fill="#F4E5D2"/>
+                <path d="M110 110 L110 210 A100 100 0 0 1 39.3 180.7Z" fill="#D62828"/>
+                <path d="M110 110 L39.3 180.7 A100 100 0 0 1 10 110Z" fill="#FBF6EF"/>
+                <path d="M110 110 L10 110 A100 100 0 0 1 39.3 39.3Z" fill="#D62828"/>
+                <path d="M110 110 L39.3 39.3 A100 100 0 0 1 110 10Z" fill="#F4E5D2"/>
+                <path d="M110 110 L110 10 A100 100 0 0 1 180.7 39.3Z" fill="#D62828"/>
+                <path d="M110 110 L180.7 39.3 A100 100 0 0 1 210 110Z" fill="#FBF6EF"/>
+              </g>
+              <circle cx="110" cy="110" r="100" fill="none" stroke="#F4E5D2" stroke-width="6"/>
+            </svg>
+            <span class="absolute left-1/2 top-1/2 grid h-14 w-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-slate-900 text-2xl ring-4 ring-crema">🐾</span>
+            <span class="absolute -top-2 left-1/2 h-0 w-0 -translate-x-1/2 border-x-[10px] border-t-[16px] border-x-transparent border-t-crema"></span>
+          </div>
+          <p class="mt-10 text-xs font-extrabold uppercase tracking-[0.18em] text-collar-500">Regalo de cumpleaños</p>
+          <h2 id="titulo-ruleta" class="mt-3 font-display text-4xl font-medium tracking-tight text-white sm:text-5xl">La Ruleta de Melloco</h2>
+          <p class="mt-5 max-w-md text-lg leading-relaxed text-stone-300">
+            Déjanos la fecha de cumpleaños de tu perrito y Melloco te enviará un regalo sorpresa {{ dias_regalo }} días antes de su fiesta.
+          </p>
+        </div>
+
+        <div id="ruleta-panel" class="scroll-mt-24">
+          {% include "pedidos/partials/ruleta.html" %}
+        </div>
+      </div>
+    </section>
+
+    {# ───────────────────────── 4. NUESTRA HISTORIA + FOOTER ───────────────────────── #}
+    <section id="historia" class="scroll-mt-16 bg-crema" aria-labelledby="titulo-historia">
+      <div class="mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:py-28">
+        <figure class="mx-auto w-full max-w-xs lg:col-span-4 lg:max-w-none">
+          <img src="{% static 'pedidos/img/chester-avatar.jpg' %}" width="480" height="480"
+               alt="Ilustración de Chester, schnauzer miniatura de barba blanca y collar rojo."
+               class="aspect-square w-full rounded-full shadow-2xl shadow-stone-500/25 ring-8 ring-white/60">
+          <figcaption class="mt-5 text-center text-sm font-semibold text-slate-600">Chester · por siempre nuestro barbón</figcaption>
+        </figure>
+
+        <div class="lg:col-span-8">
+          <p id="titulo-historia" class="text-xs font-extrabold uppercase tracking-[0.18em] text-collar-700">Nuestra historia</p>
+          <blockquote class="mt-5">
+            <p class="font-display text-3xl font-medium leading-snug tracking-tight sm:text-4xl lg:text-5xl">
+              Chester's nació para honrar a nuestro mejor amigo <span class="italic">barbón.</span>
+            </p>
+            <p class="mt-7 max-w-2xl text-lg leading-relaxed text-slate-700 sm:text-xl">
+              Hoy, su hermano Melloco (nuestro Director de Calidad) se asegura de que cada pastel sea perfecto para celebrar al tuyo.
+            </p>
+          </blockquote>
+          <p class="mt-8 font-display text-lg italic text-slate-600">Con cariño, la familia de Chester y Melloco 🐾</p>
+        </div>
+      </div>
+
+      <footer class="border-t border-slate-900/10">
+        <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <p>© {% now "Y" %} Chester's · Pasteles para perritos</p>
+          <div class="flex gap-6 font-semibold">
+            <a href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener" class="hover:text-slate-900">WhatsApp</a>
+            <a href="#configurador" class="hover:text-slate-900">Hacer un pedido</a>
+          </div>
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Tras confirmar el pedido, el servidor dispara este evento con la URL de WhatsApp.
+      document.body.addEventListener('abrirWhatsapp', (e) => {
+        setTimeout(() => { window.location.href = e.detail.url; }, 900);
+      });
+
+      // Después de cada paso: si el panel quedó fuera de vista, súbelo; y mueve el foco al título.
+      document.body.addEventListener('htmx:afterSwap', (e) => {
+        const panel = e.detail.target;
+        if (!['configurador-panel', 'ruleta-panel'].includes(panel.id)) return;
+        if (panel.getBoundingClientRect().top < 64) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const destino = panel.querySelector('[aria-invalid="true"]') || panel.querySelector('[data-foco]');
+        destino?.focus({ preventScroll: true });
+      });
+    });
+  </script>
+</body>
+</html>
