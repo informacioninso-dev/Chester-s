@@ -5,29 +5,30 @@
 </head>
 
 <body class="bg-stone-50 font-sans text-slate-900 antialiased selection:bg-collar-100">
+  <a href="#contenido" class="sr-only rounded-full bg-slate-900 px-5 py-3 font-bold text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-3 focus:z-50">Saltar al contenido</a>
   <header class="border-b border-stone-200/70 bg-stone-50">
     <div class="mx-auto flex h-16 max-w-3xl items-center justify-between px-4 sm:px-6">
       <a href="{% url 'pedidos:index' %}" class="flex items-center gap-3">
-        <img src="{% static 'pedidos/img/chester-avatar.jpg' %}" alt="" class="h-10 w-10 rounded-full ring-1 ring-stone-300">
-        <span class="font-display text-xl font-semibold tracking-tight">Chester's</span>
+        <img src="{% static 'pedidos/img/chester-avatar.jpg' %}" alt="" width="40" height="40" class="h-10 w-10 rounded-full ring-1 ring-stone-300">
+        <span translate="no" class="font-display text-xl font-semibold tracking-tight">Chester’s</span>
       </a>
       <a href="{% url 'pedidos:index' %}" class="text-sm font-bold text-slate-600 transition hover:text-slate-900">← Volver al inicio</a>
     </div>
   </header>
 
-  <main class="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:py-20">
+  <main id="contenido" tabindex="-1" class="mx-auto max-w-3xl focus:outline-none px-4 py-16 sm:px-6 lg:py-20">
     <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-collar-600">LOPDP · Ecuador</p>
     <h1 class="mt-3 font-display text-4xl font-medium tracking-tight sm:text-5xl">Política de privacidad</h1>
     <p class="mt-4 text-sm text-slate-500">Última actualización: 11 de noviembre de 2026</p>
 
     <div class="mt-10 space-y-10 text-lg leading-relaxed text-slate-700 [&_li]:mt-2 [&_ul]:mt-4 [&_ul]:list-disc [&_ul]:pl-6 [&_p+p]:mt-4">
       <section>
-        <p>En Chester's cuidamos los datos de tu familia como cuidamos a nuestros perritos. Aquí te contamos, sin letra pequeña, qué datos guardamos, para qué y cómo puedes pedir que los cambiemos o los borremos, conforme a la Ley Orgánica de Protección de Datos Personales (LOPDP) del Ecuador.</p>
+        <p>En Chester’s cuidamos los datos de tu familia como cuidamos a nuestros perritos. Aquí te contamos, sin letra pequeña, qué datos guardamos, para qué y cómo puedes pedir que los cambiemos o los borremos, conforme a la Ley Orgánica de Protección de Datos Personales (LOPDP) del Ecuador.</p>
       </section>
 
       <section aria-labelledby="responsable">
         <h2 id="responsable" class="font-display text-2xl font-medium tracking-tight text-slate-900 sm:text-3xl">1. Quién es responsable</h2>
-        <p class="mt-4">Chester's, pastelería artesanal para perritos, es responsable del tratamiento de tus datos. Puedes escribirnos por <a href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener" class="font-bold text-collar-700 underline underline-offset-2">WhatsApp</a> para cualquier tema de privacidad.</p>
+        <p class="mt-4">Chester’s, pastelería artesanal para perritos, es responsable del tratamiento de tus datos. Puedes escribirnos por <a href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener" class="font-bold text-collar-700 underline underline-offset-2">WhatsApp</a> para cualquier tema de privacidad.</p>
       </section>
 
       <section aria-labelledby="datos">

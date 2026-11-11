@@ -1,5 +1,5 @@
 {% load static %}<!doctype html>
-<html lang="es" class="scroll-smooth">
+<html lang="es" class="scroll-smooth scroll-pt-16">
 <head>
   {% include "pedidos/partials/head.html" %}
 </head>
@@ -7,15 +7,17 @@
 <body class="bg-stone-50 font-sans text-slate-900 antialiased selection:bg-collar-100"
       hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 
+  <a href="#contenido" class="sr-only rounded-full bg-slate-900 px-5 py-3 font-bold text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-3 focus:z-50">Saltar al contenido</a>
+
   {# ───────────────────────── NAV ───────────────────────── #}
   <header class="sticky top-0 z-40 border-b border-stone-200/70 bg-stone-50/85 backdrop-blur-md">
     <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
       <a href="#inicio" class="flex items-center gap-3">
-        <img src="{% static 'pedidos/img/chester-avatar.jpg' %}" alt="" class="h-10 w-10 rounded-full ring-1 ring-stone-300">
-        <span class="font-display text-xl font-semibold tracking-tight">Chester's</span>
+        <img src="{% static 'pedidos/img/chester-avatar.jpg' %}" alt="" width="40" height="40" class="h-10 w-10 rounded-full ring-1 ring-stone-300">
+        <span translate="no" class="font-display text-xl font-semibold tracking-tight">Chester’s</span>
       </a>
       <nav class="hidden items-center gap-8 text-sm font-semibold text-slate-600 md:flex" aria-label="Principal">
-        <a href="#configurador" class="transition hover:text-slate-900">Arma su pastel</a>
+        <a href="#configurador" class="transition hover:text-slate-900">Haz tu pedido</a>
         <a href="#ruleta" class="transition hover:text-slate-900">Ruleta de Melloco</a>
         <a href="#historia" class="transition hover:text-slate-900">Nuestra historia</a>
       </nav>
@@ -23,7 +25,7 @@
     </div>
   </header>
 
-  <main>
+  <main id="contenido" tabindex="-1" class="focus:outline-none">
     {# ───────────────────────── 1. HERO ───────────────────────── #}
     <section id="inicio" class="relative overflow-hidden">
       <div class="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-20 pt-10 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:pb-28 lg:pt-20">
@@ -31,12 +33,12 @@
           <p class="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
             <span class="h-1.5 w-1.5 rounded-full bg-collar-600"></span> Pastelería artesanal para perritos
           </p>
-          <h1 class="mt-7 font-display text-5xl font-medium leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl">
+          <h1 class="mt-7 text-balance font-display text-5xl font-medium leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl">
             Celebra su vida.<br>
             <span class="italic text-collar-600">Cada cumpleaños cuenta.</span>
           </h1>
           <p class="mt-7 max-w-md text-lg leading-relaxed text-slate-600">
-            Pasteles saludables y artesanales. Inspirado por Chester, aprobado por Melloco 🐾
+            Pasteles saludables y artesanales. Inspirados por Chester, aprobados por Melloco 🐾
           </p>
 
           <div class="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
@@ -63,8 +65,8 @@
           <div class="relative mx-auto max-w-sm sm:max-w-md lg:max-w-none">
             <div class="absolute -inset-3 rotate-3 rounded-[2.75rem] bg-crema-300/60" aria-hidden="true"></div>
             <div class="relative overflow-hidden rounded-[2.5rem] bg-crema shadow-2xl shadow-stone-400/30 ring-1 ring-black/5">
-              <img src="{% static 'pedidos/img/logo.jpg' %}" width="1000" height="914"
-                   alt="Chester, un schnauzer miniatura con collar rojo, frente a su pastel con forma de huesito. Chester's, pasteles para perritos."
+              <img src="{% static 'pedidos/img/logo.jpg' %}" width="1000" height="914" fetchpriority="high"
+                   alt="Chester, un schnauzer miniatura con collar rojo, frente a su pastel con forma de huesito. Chester’s, pasteles para perritos."
                    class="w-full">
             </div>
             <div class="absolute -bottom-8 left-4 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-xl ring-1 ring-black/5 sm:left-8">
@@ -79,21 +81,21 @@
     </section>
 
     {# ───────────────────────── 2. CONFIGURADOR ───────────────────────── #}
-    <section id="configurador" class="scroll-mt-16 border-y border-stone-200 bg-white" aria-labelledby="titulo-configurador">
+    <section id="configurador" class="border-y border-stone-200 bg-white" aria-labelledby="titulo-configurador">
       <div class="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:py-28">
         <div class="text-center">
-          <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-collar-600">El configurador</p>
-          <h2 id="titulo-configurador" class="mt-3 font-display text-4xl font-medium tracking-tight sm:text-5xl">Arma su pastel en 4 pasos</h2>
-          <p class="mx-auto mt-4 max-w-md text-slate-600">Elige receta y forma. Al final confirmas directamente con Melloco por WhatsApp.</p>
+          <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-collar-600">Tu pedido</p>
+          <h2 id="titulo-configurador" class="mt-3 text-balance font-display text-4xl font-medium tracking-tight sm:text-5xl">Arma el pastel de tu perrito</h2>
+          <p class="mx-auto mt-4 max-w-md text-slate-600">Elige receta y forma en 4 pasos. Al final lo confirmas con Melloco por WhatsApp.</p>
         </div>
-        <div id="configurador-panel" class="mt-12 scroll-mt-24">
+        <div id="configurador-panel" class="mt-12 scroll-mt-6">
           {% include "pedidos/partials/configurador.html" %}
         </div>
       </div>
     </section>
 
     {# ───────────────────────── 3. RULETA DE MELLOCO (LEADS) ───────────────────────── #}
-    <section id="ruleta" class="scroll-mt-16 bg-slate-900 text-stone-100" aria-labelledby="titulo-ruleta">
+    <section id="ruleta" class="bg-slate-900 text-stone-100" aria-labelledby="titulo-ruleta">
       <div class="mx-auto grid max-w-6xl items-center gap-14 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:gap-20 lg:py-28">
         <div>
           <div class="relative h-40 w-40 sm:h-48 sm:w-48" aria-hidden="true">
@@ -113,34 +115,34 @@
             <span class="absolute left-1/2 top-1/2 grid h-14 w-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-slate-900 text-2xl ring-4 ring-crema">🐾</span>
             <span class="absolute -top-2 left-1/2 h-0 w-0 -translate-x-1/2 border-x-[10px] border-t-[16px] border-x-transparent border-t-crema"></span>
           </div>
-          <p class="mt-10 text-xs font-extrabold uppercase tracking-[0.18em] text-collar-500">Regalo de cumpleaños</p>
-          <h2 id="titulo-ruleta" class="mt-3 font-display text-4xl font-medium tracking-tight text-white sm:text-5xl">La Ruleta de Melloco</h2>
+          <p class="mt-10 text-xs font-extrabold uppercase tracking-[0.18em] text-collar-400">Regalo de cumpleaños</p>
+          <h2 id="titulo-ruleta" class="mt-3 text-balance font-display text-4xl font-medium tracking-tight text-white sm:text-5xl">La Ruleta de Melloco</h2>
           <p class="mt-5 max-w-md text-lg leading-relaxed text-stone-300">
             Déjanos la fecha de cumpleaños de tu perrito y Melloco te enviará un regalo sorpresa {{ dias_regalo }} días antes de su fiesta.
           </p>
         </div>
 
-        <div id="ruleta-panel" class="scroll-mt-24">
+        <div id="ruleta-panel" class="scroll-mt-6">
           {% include "pedidos/partials/ruleta.html" %}
         </div>
       </div>
     </section>
 
     {# ───────────────────────── 4. NUESTRA HISTORIA + FOOTER ───────────────────────── #}
-    <section id="historia" class="scroll-mt-16 bg-crema" aria-labelledby="titulo-historia">
+    <section id="historia" class="bg-crema" aria-labelledby="titulo-historia">
       <div class="mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:py-28">
         <figure class="mx-auto w-full max-w-xs lg:col-span-4 lg:max-w-none">
-          <img src="{% static 'pedidos/img/chester-avatar.jpg' %}" width="480" height="480"
+          <img src="{% static 'pedidos/img/chester-avatar.jpg' %}" width="480" height="480" loading="lazy"
                alt="Ilustración de Chester, schnauzer miniatura de barba blanca y collar rojo."
                class="aspect-square w-full rounded-full shadow-2xl shadow-stone-500/25 ring-8 ring-white/60">
           <figcaption class="mt-5 text-center text-sm font-semibold text-slate-600">Chester · por siempre nuestro barbón</figcaption>
         </figure>
 
         <div class="lg:col-span-8">
-          <p id="titulo-historia" class="text-xs font-extrabold uppercase tracking-[0.18em] text-collar-700">Nuestra historia</p>
+          <h2 id="titulo-historia" class="text-xs font-extrabold uppercase tracking-[0.18em] text-collar-700">Nuestra historia</h2>
           <blockquote class="mt-5">
-            <p class="font-display text-3xl font-medium leading-snug tracking-tight sm:text-4xl lg:text-5xl">
-              Chester's nació para honrar a nuestro mejor amigo <span class="italic">barbón.</span>
+            <p class="text-balance font-display text-3xl font-medium leading-snug tracking-tight sm:text-4xl lg:text-5xl">
+              Chester’s nació para honrar a nuestro mejor amigo <span class="italic">barbón.</span>
             </p>
             <p class="mt-7 max-w-2xl text-lg leading-relaxed text-slate-700 sm:text-xl">
               Hoy, su hermano Melloco (nuestro Director de Calidad) se asegura de que cada pastel sea perfecto para celebrar al tuyo.
@@ -152,7 +154,7 @@
 
       <footer class="border-t border-slate-900/10">
         <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>© {% now "Y" %} Chester's · Pasteles para perritos</p>
+          <p>© {% now "Y" %} <span translate="no">Chester’s</span> · Pasteles para perritos</p>
           <div class="flex gap-6 font-semibold">
             <a href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener" class="hover:text-slate-900">WhatsApp</a>
             <a href="#configurador" class="hover:text-slate-900">Hacer un pedido</a>

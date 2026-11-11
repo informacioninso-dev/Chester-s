@@ -46,7 +46,7 @@ class PedidoForm(TelefonoMixin, forms.ModelForm):
         error_messages={"required": "Elige un estilo para continuar."},
     )
     acepta_datos = forms.BooleanField(
-        error_messages={"required": "Necesitamos tu autorización para procesar el pedido."},
+        error_messages={"required": "Marca la casilla de autorización para continuar."},
     )
 
     class Meta:
@@ -54,26 +54,28 @@ class PedidoForm(TelefonoMixin, forms.ModelForm):
         fields = ["nombre_perro", "fecha_cumple", "receta", "estilo", "nombre_cliente", "telefono"]
         widgets = {
             "nombre_perro": forms.TextInput(
-                attrs={"class": INPUT, "placeholder": "Ej. Rocky", "autocomplete": "off"}
+                attrs={"class": INPUT, "placeholder": "Ej.: Rocky", "autocomplete": "off", "spellcheck": "false"}
             ),
             "fecha_cumple": forms.DateInput(
                 format="%Y-%m-%d", attrs={"class": INPUT, "type": "date"}
             ),
             "nombre_cliente": forms.TextInput(
-                attrs={"class": INPUT, "placeholder": "Tu nombre", "autocomplete": "name"}
+                attrs={"class": INPUT, "placeholder": "Ej.: Ana", "autocomplete": "name"}
             ),
             "telefono": forms.TextInput(
                 attrs={
                     "class": INPUT,
                     "placeholder": "099 123 4567",
+                    "type": "tel",
                     "inputmode": "tel",
                     "autocomplete": "tel",
                 }
             ),
         }
+        help_texts = {"fecha_cumple": "El día en que necesitas el pastel."}
         error_messages = {
             "nombre_perro": {"required": "¿Cómo se llama tu perrito?"},
-            "fecha_cumple": {"required": "Indícanos la fecha del cumpleaños."},
+            "fecha_cumple": {"required": "Indícanos el día de la celebración."},
             "nombre_cliente": {"required": "Cuéntanos tu nombre."},
             "telefono": {"required": "Déjanos tu WhatsApp para confirmar."},
         }
@@ -102,8 +104,18 @@ class PedidoForm(TelefonoMixin, forms.ModelForm):
 
 
 class LeadCumpleForm(TelefonoMixin, forms.ModelForm):
+    """Formulario de la Ruleta de Melloco.
+
+    Usa ids propios ("ruleta_*") porque convive en la misma página con el
+    configurador, que tiene campos con el mismo nombre.
+    """
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("auto_id", "ruleta_%s")
+        super().__init__(*args, **kwargs)
+
     acepta_datos = forms.BooleanField(
-        error_messages={"required": "Necesitamos tu autorización para guardar la fecha."},
+        error_messages={"required": "Marca la casilla de autorización para guardar la fecha."},
     )
 
     class Meta:
@@ -111,10 +123,10 @@ class LeadCumpleForm(TelefonoMixin, forms.ModelForm):
         fields = ["nombre_humano", "nombre_perro", "fecha_cumple", "telefono"]
         widgets = {
             "nombre_humano": forms.TextInput(
-                attrs={"class": INPUT, "placeholder": "Tu nombre", "autocomplete": "name"}
+                attrs={"class": INPUT, "placeholder": "Ej.: Ana", "autocomplete": "name"}
             ),
             "nombre_perro": forms.TextInput(
-                attrs={"class": INPUT, "placeholder": "Nombre de tu perrito", "autocomplete": "off"}
+                attrs={"class": INPUT, "placeholder": "Ej.: Luna", "autocomplete": "off", "spellcheck": "false"}
             ),
             "fecha_cumple": forms.DateInput(
                 format="%Y-%m-%d", attrs={"class": INPUT, "type": "date"}
@@ -123,6 +135,7 @@ class LeadCumpleForm(TelefonoMixin, forms.ModelForm):
                 attrs={
                     "class": INPUT,
                     "placeholder": "099 123 4567",
+                    "type": "tel",
                     "inputmode": "tel",
                     "autocomplete": "tel",
                 }
@@ -132,5 +145,5 @@ class LeadCumpleForm(TelefonoMixin, forms.ModelForm):
             "nombre_humano": {"required": "Cuéntanos tu nombre."},
             "nombre_perro": {"required": "¿Cómo se llama tu perrito?"},
             "fecha_cumple": {"required": "Indícanos su fecha de cumpleaños."},
-            "telefono": {"required": "Necesitamos un número para escribirte."},
+            "telefono": {"required": "Déjanos tu WhatsApp para avisarte del regalo."},
         }

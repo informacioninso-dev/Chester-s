@@ -2,10 +2,10 @@
 {% if lead_ok %}
   <div class="aparecer rounded-[2rem] bg-white px-6 py-12 text-center text-slate-900 shadow-2xl sm:px-10" role="status">
     <span class="mx-auto grid h-16 w-16 place-items-center rounded-full bg-collar-50 text-3xl" aria-hidden="true">🎁</span>
-    <h3 data-foco tabindex="-1" class="mt-6 font-display text-3xl font-medium tracking-tight focus:outline-none">
+    <h3 data-foco tabindex="-1" class="mt-6 text-balance font-display text-3xl font-medium tracking-tight focus:outline-none">
       ¡Melloco ha guardado la fecha! Te escribiremos pronto.
     </h3>
-    <p class="mx-auto mt-4 max-w-sm text-slate-600">
+    <p class="mx-auto mt-4 max-w-sm break-words text-slate-600">
       El regalo sorpresa de <strong class="text-slate-900">{{ lead_ok.nombre_perro }}</strong> sale alrededor del {{ fecha_regalo }}.
     </p>
     <button type="button" hx-get="{% url 'pedidos:ruleta' %}" hx-target="#ruleta-panel"
@@ -23,34 +23,35 @@
       <div>
         <label for="{{ lead_form.nombre_humano.id_for_label }}" class="mb-2 block text-sm font-bold">Tu nombre</label>
         {{ lead_form.nombre_humano }}
-        {% if lead_form.nombre_humano.errors %}<p class="mt-2 text-sm font-semibold text-collar-700">{{ lead_form.nombre_humano.errors.0 }}</p>{% endif %}
+        {% if lead_form.nombre_humano.errors %}<p id="{{ lead_form.nombre_humano.auto_id }}_error" class="mt-2 text-sm font-semibold text-collar-700">{{ lead_form.nombre_humano.errors.0 }}</p>{% endif %}
       </div>
       <div>
-        <label for="{{ lead_form.nombre_perro.id_for_label }}" class="mb-2 block text-sm font-bold">Nombre del perro</label>
+        <label for="{{ lead_form.nombre_perro.id_for_label }}" class="mb-2 block text-sm font-bold">Nombre de tu perrito</label>
         {{ lead_form.nombre_perro }}
-        {% if lead_form.nombre_perro.errors %}<p class="mt-2 text-sm font-semibold text-collar-700">{{ lead_form.nombre_perro.errors.0 }}</p>{% endif %}
+        {% if lead_form.nombre_perro.errors %}<p id="{{ lead_form.nombre_perro.auto_id }}_error" class="mt-2 text-sm font-semibold text-collar-700">{{ lead_form.nombre_perro.errors.0 }}</p>{% endif %}
       </div>
       <div>
         <label for="{{ lead_form.fecha_cumple.id_for_label }}" class="mb-2 block text-sm font-bold">Fecha de cumpleaños</label>
         {{ lead_form.fecha_cumple }}
-        {% if lead_form.fecha_cumple.errors %}<p class="mt-2 text-sm font-semibold text-collar-700">{{ lead_form.fecha_cumple.errors.0 }}</p>{% endif %}
+        {% if lead_form.fecha_cumple.errors %}<p id="{{ lead_form.fecha_cumple.auto_id }}_error" class="mt-2 text-sm font-semibold text-collar-700">{{ lead_form.fecha_cumple.errors.0 }}</p>{% endif %}
       </div>
       <div>
-        <label for="{{ lead_form.telefono.id_for_label }}" class="mb-2 block text-sm font-bold">Teléfono (WhatsApp)</label>
+        <label for="{{ lead_form.telefono.id_for_label }}" class="mb-2 block text-sm font-bold">Tu WhatsApp</label>
         {{ lead_form.telefono }}
-        {% if lead_form.telefono.errors %}<p class="mt-2 text-sm font-semibold text-collar-700">{{ lead_form.telefono.errors.0 }}</p>{% endif %}
+        {% if lead_form.telefono.errors %}<p id="{{ lead_form.telefono.auto_id }}_error" class="mt-2 text-sm font-semibold text-collar-700">{{ lead_form.telefono.errors.0 }}</p>{% endif %}
       </div>
     </div>
 
     <label class="mt-6 flex items-start gap-3 text-sm leading-relaxed text-slate-600">
-      <input type="checkbox" name="acepta_datos" class="mt-0.5 h-5 w-5 shrink-0 rounded accent-collar-600" {% if lead_form.acepta_datos.value %}checked{% endif %} {% if lead_form.acepta_datos.errors %}aria-invalid="true"{% endif %}>
-      <span>Autorizo a Chester's a usar estos datos para contactarme por el cumpleaños de mi perrito, conforme a la LOPDP y la <a href="{% url 'pedidos:privacidad' %}" target="_blank" rel="noopener" class="font-bold underline underline-offset-2 hover:text-slate-900">política de privacidad</a>. Puedo pedir su eliminación cuando quiera.</span>
+      <input type="checkbox" name="acepta_datos" class="mt-0.5 h-5 w-5 shrink-0 rounded accent-collar-600" {% if lead_form.acepta_datos.value %}checked{% endif %} {% if lead_form.acepta_datos.errors %}aria-invalid="true" aria-describedby="error-acepta-ruleta"{% endif %}>
+      <span>Autorizo a Chester’s a usar estos datos para contactarme por el cumpleaños de mi perrito, conforme a la LOPDP y la <a href="{% url 'pedidos:privacidad' %}" target="_blank" rel="noopener" class="font-bold underline underline-offset-2 hover:text-slate-900">política de privacidad</a>. Puedo pedir su eliminación cuando quiera.</span>
     </label>
-    {% if lead_form.acepta_datos.errors %}<p class="mt-2 text-sm font-semibold text-collar-700">{{ lead_form.acepta_datos.errors.0 }}</p>{% endif %}
+    {% if lead_form.acepta_datos.errors %}<p id="error-acepta-ruleta" class="mt-2 text-sm font-semibold text-collar-700">{{ lead_form.acepta_datos.errors.0 }}</p>{% endif %}
 
     <button type="submit"
             class="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-collar-600 px-7 py-4 font-extrabold text-white shadow-lg shadow-collar-600/25 transition hover:bg-collar-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-collar-600/30">
-      Girar la ruleta 🎁
+      <span class="en-reposo">Guardar su cumpleaños 🎁</span>
+      <span class="al-enviar">Guardando…</span>
     </button>
   </form>
 {% endif %}

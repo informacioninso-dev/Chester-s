@@ -14,6 +14,11 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 - 2026-11-11 · El regalo de la Ruleta se envía `CHESTERS_DIAS_REGALO` (15) días antes del próximo cumpleaños; el 29/02 se trata como 28/02.
 - 2026-11-11 · Binn se integra en dos modos (webhook push + API pull) para que la API sirva de reintento si falla el webhook.
 - 2026-11-11 · Política de privacidad propia en `/privacidad/`, enlazada desde ambas autorizaciones y el footer (spec 001).
+- 2026-11-11 · La fecha del configurador es el **día de la celebración** ("¿Cuándo lo celebran?", solo hoy en adelante); la de la Ruleta es el **cumpleaños** (cualquier año). Se separaron las etiquetas porque con la misma etiqueta la gente ponía la fecha de nacimiento en el pedido y el formulario la rechazaba.
+- 2026-11-11 · Textos en español con mayúscula solo inicial ("Carne y puré", "Huesito"), siempre "perrito" y "Tu WhatsApp", y "Chester’s" con apóstrofo curvo como en el logo. La regla de *Title Case* de `web-design-guidelines` no aplica en español.
+- 2026-11-11 · El botón de la Ruleta dice "Guardar su cumpleaños", no "Girar la ruleta": no hay premio al azar y el texto no debe prometerlo. La ruleta solo gira al pasar el cursor o al enviar (pauta de accesibilidad de animaciones).
+- 2026-11-11 · El formulario de la Ruleta usa ids `ruleta_*`: convive en la página con el configurador, que tiene campos con el mismo nombre.
+- 2026-11-11 · Skills de revisión del proyecto en `.claude/skills/`: `web-design-guidelines` (Vercel, interfaz) y `ux-copy` (Anthropic, textos).
 
 ## Pendientes conocidos
 

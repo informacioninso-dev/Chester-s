@@ -12,12 +12,12 @@ telefono_validator = RegexValidator(
 
 
 class Receta(models.TextChoices):
-    CARNE_PURE = "carne_pure", "Carne y Puré"
-    MANZANA_ZANAHORIA_YOGUR = "manzana_zanahoria_yogur", "Manzana, Zanahoria y Yogur"
+    CARNE_PURE = "carne_pure", "Carne y puré"
+    MANZANA_ZANAHORIA_YOGUR = "manzana_zanahoria_yogur", "Manzana, zanahoria y yogur"
 
 
 class Estilo(models.TextChoices):
-    HUESITO = "huesito", "Forma de Huesito"
+    HUESITO = "huesito", "Huesito"
     REDONDO = "redondo", "Redondo"
 
 

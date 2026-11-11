@@ -18,7 +18,7 @@ from .crm import notificar_binn
 from .forms import LeadCumpleForm, PedidoForm
 from .models import Cotizacion, Estilo, LeadCumple, Receta
 
-PASOS_NOMBRES = ["Datos", "Receta", "Estilo", "Confirmar"]
+PASOS_NOMBRES = ["Datos", "Receta", "Forma", "Confirmar"]
 
 FRASE_ESTILO = {
     Estilo.HUESITO: "en forma de huesito",

@@ -26,6 +26,14 @@ class IndexTests(TestCase):
         self.assertContains(r, "nuestro mejor amigo <span class=\"italic\">barbón.</span>", html=False)
         self.assertContains(r, 'hx-post="/configurador/"')
 
+    def test_sin_ids_duplicados(self):
+        """El configurador y la ruleta conviven en la página: sus ids no deben chocar."""
+        import re
+        html = self.client.get(reverse("pedidos:index")).content.decode()
+        ids = re.findall(r'id="([^"]+)"', html)
+        duplicados = {i for i in ids if ids.count(i) > 1}
+        self.assertEqual(duplicados, set())
+
 
 class PrivacidadTests(TestCase):
     url = reverse("pedidos:privacidad")
@@ -60,6 +68,13 @@ class ConfiguradorTests(TestCase):
         self.assertContains(r, 'name="paso" value="1"')
         self.assertNotContains(r, "<html")  # solo el fragmento
 
+    def test_errores_enlazados_a_su_campo(self):
+        r = self.client.post(self.url, {"paso": 1, "ir_a": 2}, **HTMX)
+        html = r.content.decode()
+        self.assertIn('aria-describedby="id_nombre_perro_error"', html)
+        self.assertIn('id="id_nombre_perro_error"', html)
+        self.assertIn('id="id_fecha_cumple_helptext"', html)
+
     def test_fecha_pasada_no_se_acepta(self):
         ayer = (timezone.localdate() - datetime.timedelta(days=1)).isoformat()
         r = self.client.post(self.url, {"paso": 1, "ir_a": 2, "nombre_perro": "Rocky", "fecha_cumple": ayer}, **HTMX)
@@ -69,7 +84,7 @@ class ConfiguradorTests(TestCase):
         r = self.client.post(self.url, {"paso": 1, "ir_a": 2, "nombre_perro": "Rocky", "fecha_cumple": manana()}, **HTMX)
         self.assertContains(r, 'name="paso" value="2"')
         self.assertContains(r, '<input type="hidden" name="nombre_perro" value="Rocky">', html=True)
-        self.assertContains(r, "Carne y Puré")
+        self.assertContains(r, "Carne y puré")
         self.assertNotContains(r, "Elige una receta")  # sin errores prematuros
         self.assertNotContains(r, 'aria-invalid')
 
@@ -87,7 +102,7 @@ class ConfiguradorTests(TestCase):
         datos = {"paso": 3, "ir_a": 4, "nombre_perro": "Rocky", "fecha_cumple": manana(), "receta": "manzana_zanahoria_yogur", "estilo": "redondo"}
         r = self.client.post(self.url, datos, **HTMX)
         self.assertContains(r, "Todo listo para la fiesta")
-        self.assertContains(r, "Manzana, Zanahoria y Yogur")
+        self.assertContains(r, "Manzana, zanahoria y yogur")
         self.assertContains(r, 'hx-post="/configurador/confirmar/"')
 
 
@@ -119,11 +134,12 @@ class ConfirmarTests(TestCase):
             "Hola Melloco, quiero confirmar el pastel de carne y puré en forma de huesito "
             "para el cumpleaños de Rocky el 15 de diciembre de 2099",
         )
-        self.assertContains(r, "¡Rocky tendrá su pastel!")
+        self.assertContains(r, "¡Casi listo! Solo falta enviarle el mensaje a Melloco.")
+        self.assertContains(r, "el pedido de Rocky ya escrito")
 
     def test_sin_consentimiento_no_guarda(self):
         r = self.client.post(self.url, self.datos(acepta_datos=""), **HTMX)
-        self.assertContains(r, "Necesitamos tu autorización")
+        self.assertContains(r, "Marca la casilla de autorización para continuar.")
         self.assertEqual(Cotizacion.objects.count(), 0)
 
     def test_telefono_invalido(self):
