@@ -138,6 +138,14 @@ def index(request):
     return render(request, "pedidos/index.html", _contexto_index())
 
 
+@require_GET
+def privacidad(request):
+    return render(request, "pedidos/privacidad.html", {
+        "titulo": "Política de privacidad | Chester's",
+        "whatsapp": settings.CHESTERS_WHATSAPP,
+    })
+
+
 @require_http_methods(["GET", "POST"])
 def configurador(request):
     """Navegación entre pasos.

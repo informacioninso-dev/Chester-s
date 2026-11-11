@@ -14,8 +14,10 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 - 2026-11-11 · El regalo de la Ruleta se envía `CHESTERS_DIAS_REGALO` (15) días antes del próximo cumpleaños; el 29/02 se trata como 28/02.
 - 2026-11-11 · Binn se integra en dos modos (webhook push + API pull) para que la API sirva de reintento si falla el webhook.
 
+- 2026-11-11 · Política de privacidad propia en `/privacidad/`, enlazada desde ambas autorizaciones y el footer (spec 001).
+
 ## Pendientes conocidos
 
 - Compilar Tailwind en lugar del CDN.
-- Publicar la política de privacidad (LOPDP) y enlazarla en los formularios.
+- Revisar con un abogado el texto de `/privacidad/` (spec 001) y agregar razón social/RUC del responsable.
 - Mover el webhook a una cola (Celery/RQ) si sube el volumen.

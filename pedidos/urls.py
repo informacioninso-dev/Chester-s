@@ -6,6 +6,7 @@ app_name = "pedidos"
 
 urlpatterns = [
     path("", views.index, name="index"),
+    path("privacidad/", views.privacidad, name="privacidad"),
     # Fragmentos HTMX
     path("configurador/", views.configurador, name="configurador"),
     path("configurador/confirmar/", views.confirmar_pedido, name="confirmar"),

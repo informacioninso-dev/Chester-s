@@ -53,12 +53,13 @@ pedidos/
   forms.py       PedidoForm (validación por pasos), LeadCumpleForm
   views.py       index, configurador (pasos HTMX), confirmar_pedido, registrar_lead, API Binn
   crm.py         webhook a Binn (no bloquea la respuesta)
-  templates/pedidos/index.html
-  templates/pedidos/partials/  configurador.html · pedido_confirmado.html · ruleta.html
+  templates/pedidos/index.html · privacidad.html
+  templates/pedidos/partials/  head.html · configurador.html · pedido_confirmado.html · ruleta.html
+specs/           specs del flujo spec driven (ver AGENTS.md)
 ```
 
 ## Antes de producción
 
 - Tailwind se carga desde el CDN de prueba: compilarlo con `django-tailwind` o el CLI standalone.
-- Publicar una política de privacidad (LOPDP) y enlazarla desde los textos de autorización de los formularios.
+- Revisar con un abogado el texto de la política de privacidad (`/privacidad/`) y agregar razón social/RUC.
 - Para muchos envíos al webhook, mover `crm.py` a una cola (Celery/RQ) en lugar de hilos.

@@ -27,6 +27,30 @@ class IndexTests(TestCase):
         self.assertContains(r, 'hx-post="/configurador/"')
 
 
+class PrivacidadTests(TestCase):
+    url = reverse("pedidos:privacidad")
+
+    def test_pagina_de_politica(self):
+        r = self.client.get(self.url)
+        self.assertContains(r, "Política de privacidad")
+        for seccion in ("Quién es responsable", "Qué datos guardamos", "Para qué los usamos",
+                        "Con qué base legal", "Con quién los compartimos", "Cuánto tiempo", "Tus derechos"):
+            self.assertContains(r, seccion)
+        self.assertContains(r, "Binn")
+        self.assertContains(r, "cdn.tailwindcss.com")  # mismo <head> que la landing
+
+    def test_footer_y_ruleta_enlazan_la_politica(self):
+        r = self.client.get(reverse("pedidos:index"))
+        # Footer + texto de autorización de la Ruleta.
+        self.assertContains(r, f'href="{self.url}"', count=2)
+
+    def test_autorizacion_del_configurador_enlaza_la_politica(self):
+        datos = {"paso": 3, "ir_a": 4, "nombre_perro": "Rocky", "fecha_cumple": manana(),
+                 "receta": "carne_pure", "estilo": "huesito"}
+        r = self.client.post(reverse("pedidos:configurador"), datos, **HTMX)
+        self.assertContains(r, f'href="{self.url}"')
+
+
 class ConfiguradorTests(TestCase):
     url = reverse("pedidos:configurador")
 

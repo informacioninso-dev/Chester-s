@@ -1,0 +1,87 @@
+{% load static %}<!doctype html>
+<html lang="es">
+<head>
+  {% include "pedidos/partials/head.html" %}
+</head>
+
+<body class="bg-stone-50 font-sans text-slate-900 antialiased selection:bg-collar-100">
+  <header class="border-b border-stone-200/70 bg-stone-50">
+    <div class="mx-auto flex h-16 max-w-3xl items-center justify-between px-4 sm:px-6">
+      <a href="{% url 'pedidos:index' %}" class="flex items-center gap-3">
+        <img src="{% static 'pedidos/img/chester-avatar.jpg' %}" alt="" class="h-10 w-10 rounded-full ring-1 ring-stone-300">
+        <span class="font-display text-xl font-semibold tracking-tight">Chester's</span>
+      </a>
+      <a href="{% url 'pedidos:index' %}" class="text-sm font-bold text-slate-600 transition hover:text-slate-900">← Volver al inicio</a>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:py-20">
+    <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-collar-600">LOPDP · Ecuador</p>
+    <h1 class="mt-3 font-display text-4xl font-medium tracking-tight sm:text-5xl">Política de privacidad</h1>
+    <p class="mt-4 text-sm text-slate-500">Última actualización: 11 de noviembre de 2026</p>
+
+    <div class="mt-10 space-y-10 text-lg leading-relaxed text-slate-700 [&_h2]:font-display [&_h2]:text-2xl [&_h2]:font-medium [&_h2]:tracking-tight [&_h2]:text-slate-900 [&_li]:mt-2 [&_ul]:mt-4 [&_ul]:list-disc [&_ul]:pl-6 [&_p+p]:mt-4">
+      <section>
+        <p>En Chester's cuidamos los datos de tu familia como cuidamos a nuestros perritos. Aquí te contamos, sin letra pequeña, qué datos guardamos, para qué y cómo puedes pedir que los cambiemos o los borremos, conforme a la Ley Orgánica de Protección de Datos Personales (LOPDP) del Ecuador.</p>
+      </section>
+
+      <section aria-labelledby="responsable">
+        <h2 id="responsable">1. Quién es responsable</h2>
+        <p class="mt-4">Chester's, pastelería artesanal para perritos, es responsable del tratamiento de tus datos. Puedes escribirnos por <a href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener" class="font-bold text-collar-700 underline underline-offset-2">WhatsApp</a> para cualquier tema de privacidad.</p>
+      </section>
+
+      <section aria-labelledby="datos">
+        <h2 id="datos">2. Qué datos guardamos</h2>
+        <ul>
+          <li><strong>Al armar un pedido:</strong> tu nombre, tu número de WhatsApp, el nombre de tu perrito, la fecha de su cumpleaños y la receta y forma que elegiste.</li>
+          <li><strong>En la Ruleta de Melloco:</strong> tu nombre, tu teléfono, el nombre de tu perrito y la fecha de su cumpleaños.</li>
+          <li>La fecha y hora en que nos diste tu autorización.</li>
+        </ul>
+        <p class="mt-4">No pedimos datos de pago, cédula ni ubicación, y no usamos cookies de seguimiento ni publicidad.</p>
+      </section>
+
+      <section aria-labelledby="finalidad">
+        <h2 id="finalidad">3. Para qué los usamos</h2>
+        <ul>
+          <li>Preparar y coordinar tu pedido contigo por WhatsApp.</li>
+          <li>Enviarte el regalo sorpresa de la Ruleta antes del cumpleaños de tu perrito y escribirte por esa fecha.</li>
+        </ul>
+        <p class="mt-4">No usamos tus datos para nada más y no los vendemos.</p>
+      </section>
+
+      <section aria-labelledby="base">
+        <h2 id="base">4. Con qué base legal</h2>
+        <p class="mt-4">Con tu consentimiento, que nos das al marcar la casilla de autorización en cada formulario. Puedes retirarlo cuando quieras; eso no afecta lo que hicimos antes de que lo retiraras.</p>
+      </section>
+
+      <section aria-labelledby="destinatarios">
+        <h2 id="destinatarios">5. Con quién los compartimos</h2>
+        <ul>
+          <li><strong>Binn</strong>, el sistema de gestión de clientes que usamos para organizar pedidos y cumpleaños. Lo trata solo por encargo nuestro y para estas mismas finalidades.</li>
+          <li><strong>WhatsApp (Meta)</strong>, cuando eliges enviarnos tu pedido por ese medio. En ese caso también aplica la política de privacidad de WhatsApp.</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="conservacion">
+        <h2 id="conservacion">6. Cuánto tiempo los guardamos</h2>
+        <p class="mt-4">Mientras sigan siendo necesarios para tu pedido o para el regalo de cumpleaños, o hasta que nos pidas eliminarlos o retires tu autorización, lo que ocurra primero.</p>
+      </section>
+
+      <section aria-labelledby="derechos">
+        <h2 id="derechos">7. Tus derechos</h2>
+        <p class="mt-4">Puedes pedirnos en cualquier momento:</p>
+        <ul>
+          <li><strong>Acceso:</strong> saber qué datos tuyos tenemos.</li>
+          <li><strong>Rectificación y actualización:</strong> corregir datos incorrectos o desactualizados.</li>
+          <li><strong>Eliminación:</strong> borrar tus datos.</li>
+          <li><strong>Oposición y suspensión:</strong> que dejemos de usarlos.</li>
+          <li><strong>Portabilidad:</strong> recibirlos en un formato que puedas usar en otro lado.</li>
+        </ul>
+        <p class="mt-4">Escríbenos por <a href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener" class="font-bold text-collar-700 underline underline-offset-2">WhatsApp</a> desde el número que registraste y te responderemos dentro de los plazos que fija la ley. Si no estás conforme con nuestra respuesta, puedes acudir a la Superintendencia de Protección de Datos Personales.</p>
+      </section>
+    </div>
+
+    <p class="mt-16 border-t border-stone-200 pt-8 font-display text-lg italic text-slate-600">Con cariño, la familia de Chester y Melloco 🐾</p>
+  </main>
+</body>
+</html>

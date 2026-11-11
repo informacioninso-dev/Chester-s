@@ -44,7 +44,7 @@
 
     <label class="mt-6 flex items-start gap-3 text-sm leading-relaxed text-slate-600">
       <input type="checkbox" name="acepta_datos" class="mt-0.5 h-5 w-5 shrink-0 rounded accent-collar-600" {% if lead_form.acepta_datos.value %}checked{% endif %} {% if lead_form.acepta_datos.errors %}aria-invalid="true"{% endif %}>
-      <span>Autorizo a Chester's a usar estos datos para contactarme por el cumpleaños de mi perrito, conforme a la LOPDP. Puedo pedir su eliminación cuando quiera.</span>
+      <span>Autorizo a Chester's a usar estos datos para contactarme por el cumpleaños de mi perrito, conforme a la LOPDP y la <a href="{% url 'pedidos:privacidad' %}" target="_blank" rel="noopener" class="font-bold underline underline-offset-2 hover:text-slate-900">política de privacidad</a>. Puedo pedir su eliminación cuando quiera.</span>
     </label>
     {% if lead_form.acepta_datos.errors %}<p class="mt-2 text-sm font-semibold text-collar-700">{{ lead_form.acepta_datos.errors.0 }}</p>{% endif %}
 

@@ -1,0 +1,48 @@
+{% load static %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ titulo|default:"Chester's | Pasteles para perritos" }}</title>
+  <meta name="description" content="Pasteles saludables y artesanales para el cumpleaños de tu perrito. Inspirado por Chester, aprobado por Melloco.">
+  <meta name="theme-color" content="#F4E5D2">
+  <link rel="icon" type="image/png" href="{% static 'pedidos/img/favicon.png' %}">
+  <meta property="og:title" content="Chester's | Pasteles para perritos">
+  <meta property="og:description" content="Celebra su vida. Cada cumpleaños cuenta.">
+  <meta property="og:image" content="{% static 'pedidos/img/logo.jpg' %}">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  {# En producción: compilar Tailwind (django-tailwind o el CLI standalone) en vez del CDN. #}
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            // Tomados del logo: fondo crema y collar rojo de Chester.
+            crema: { DEFAULT: '#F4E5D2', 50: '#FBF6EF', 100: '#F8EEE2', 200: '#F4E5D2', 300: '#E9D1B3' },
+            collar: { 50: '#FEF2F2', 100: '#FDE3E2', 200: '#FBCBC9', 500: '#EF3B36', 600: '#D62828', 700: '#B21F1F', 800: '#8F1B1B' },
+          },
+          fontFamily: {
+            display: ['Fraunces', 'Georgia', 'serif'],
+            sans: ['Nunito', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js" defer></script>
+
+  <style>
+    @keyframes girar { to { transform: rotate(360deg); } }
+    .ruleta { animation: girar 40s linear infinite; }
+    .ruleta.htmx-request { animation-duration: .7s; }
+    @keyframes aparecer { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .htmx-added, .aparecer { animation: aparecer .35s ease-out both; }
+    button[disabled] { opacity: .6; cursor: progress; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .ruleta, .htmx-added, .aparecer { animation: none; }
+    }
+  </style>
