@@ -187,7 +187,7 @@ def _datos_estructurados(request):
         "@context": "https://schema.org",
         "@type": "Bakery",
         "name": "Chester’s",
-        "description": "Pasteles saludables y artesanales para el cumpleaños de tu perrito.",
+        "description": "Pasteles para el cumpleaños de tu perrito, horneados en casa por la familia de Chester y Melloco.",
         "url": request.build_absolute_uri(reverse("pedidos:index")),
         "logo": request.build_absolute_uri(static("pedidos/img/logo.jpg")),
         "image": request.build_absolute_uri(static("pedidos/img/logo.jpg")),

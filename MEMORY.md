@@ -34,6 +34,8 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 
 - 2026-11-12 · **Estrategia de marketing: todo pastel está aprobado por Melloco, Director de Calidad.** En la portada manda el sello redondo "APROBADO POR MELLOCO · DIRECTOR DE CALIDAD" junto a la lista "Control de calidad Melloco", **nunca sobre el logo de Chester**: el perrito original es el protagonista de la marca. La lista dice: recetas caseras aprobadas por Melloco, hecho a pedido, revisado por él antes de salir de la cocina. Melloco se dibuja contento (boca abierta, lengua, cabeza ladeada): con la boca cerrada se veía triste. Decisión del dueño.
 
+- 2026-11-12 · Portada sin patrones de "landing hecha por IA" — pedido del dueño. Evitar: etiqueta en cápsula con puntito sobre el título, título partido en dos con la segunda frase en cursiva de color, pares de adjetivos genéricos ("saludables y artesanales"), frases en espejo ("inspirados por…, aprobados por…") y emoji al final de la frase. Escribir como la familia: quiénes somos, qué hacemos y cómo. Título actual: "Su cumpleaños también merece pastel."
+
 ## Pendientes conocidos
 
 - Revisar con un abogado el texto de `/privacidad/` (spec 001) y agregar razón social/RUC del responsable.

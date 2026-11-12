@@ -24,7 +24,7 @@ def manana():
 class IndexTests(TestCase):
     def test_landing_tiene_las_cuatro_secciones(self):
         r = self.client.get(reverse("pedidos:index"))
-        self.assertContains(r, "Celebra su vida.")
+        self.assertContains(r, "Su cumpleaños también merece pastel.")
         self.assertContains(r, "Crear el pastel de mi perrito")
         self.assertContains(r, 'id="configurador-panel"')
         self.assertContains(r, "La Ruleta de Melloco")
