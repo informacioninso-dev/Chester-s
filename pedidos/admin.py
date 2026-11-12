@@ -1,23 +1,39 @@
 from django.contrib import admin
+from django.utils.html import format_html
 
 from .models import Cotizacion, LeadCumple
 
 
+class WhatsAppClienteMixin:
+    @admin.display(description="contacto")
+    def escribir_whatsapp(self, obj):
+        return format_html(
+            '<a href="{}" target="_blank" rel="noopener">Escribir por WhatsApp</a>',
+            obj.url_whatsapp_cliente,
+        )
+
+
 @admin.register(Cotizacion)
-class CotizacionAdmin(admin.ModelAdmin):
-    list_display = ("nombre_perro", "fecha_cumple", "receta", "estilo", "nombre_cliente", "telefono", "sincronizado_crm", "creado_en")
-    list_filter = ("receta", "estilo", "sincronizado_crm", "fecha_cumple")
+class CotizacionAdmin(WhatsAppClienteMixin, admin.ModelAdmin):
+    list_display = ("nombre_perro", "fecha_cumple", "estado", "receta", "estilo", "nombre_cliente",
+                    "telefono", "escribir_whatsapp", "sincronizado_crm", "creado_en")
+    list_display_links = ("nombre_perro",)
+    list_editable = ("estado",)
+    list_filter = ("estado", "receta", "estilo", "sincronizado_crm", "fecha_cumple")
     search_fields = ("nombre_perro", "nombre_cliente", "telefono")
     date_hierarchy = "fecha_cumple"
-    readonly_fields = ("creado_en", "consentimiento_en", "sincronizado_en")
+    readonly_fields = ("creado_en", "consentimiento_en", "sincronizado_crm", "sincronizado_en")
 
 
 @admin.register(LeadCumple)
-class LeadCumpleAdmin(admin.ModelAdmin):
-    list_display = ("nombre_perro", "nombre_humano", "fecha_cumple", "regalo", "telefono", "sincronizado_crm", "creado_en")
-    list_filter = ("sincronizado_crm",)
+class LeadCumpleAdmin(WhatsAppClienteMixin, admin.ModelAdmin):
+    list_display = ("nombre_perro", "nombre_humano", "fecha_cumple", "regalo", "regalo_enviado",
+                    "telefono", "escribir_whatsapp", "sincronizado_crm", "creado_en")
+    list_display_links = ("nombre_perro",)
+    list_editable = ("regalo_enviado",)
+    list_filter = ("regalo_enviado", "sincronizado_crm")
     search_fields = ("nombre_perro", "nombre_humano", "telefono")
-    readonly_fields = ("creado_en", "consentimiento_en", "sincronizado_en")
+    readonly_fields = ("creado_en", "consentimiento_en", "sincronizado_crm", "sincronizado_en")
 
     @admin.display(description="enviar regalo el")
     def regalo(self, obj):

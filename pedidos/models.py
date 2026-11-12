@@ -21,6 +21,28 @@ class Estilo(models.TextChoices):
     REDONDO = "redondo", "Redondo"
 
 
+class EstadoPedido(models.TextChoices):
+    NUEVO = "nuevo", "Nuevo"
+    CONFIRMADO = "confirmado", "Confirmado"
+    EN_PREPARACION = "en_preparacion", "En preparación"
+    ENTREGADO = "entregado", "Entregado"
+    CANCELADO = "cancelado", "Cancelado"
+
+
+def whatsapp_internacional(telefono):
+    """'0991234567' -> '593991234567' (Ecuador). Números con código de país quedan igual."""
+    digitos = "".join(c for c in telefono or "" if c.isdigit())
+    if digitos.startswith("0"):
+        return "593" + digitos[1:]
+    return digitos
+
+
+class ConWhatsAppCliente:
+    @property
+    def url_whatsapp_cliente(self):
+        return f"https://wa.me/{whatsapp_internacional(self.telefono)}"
+
+
 class SincronizableCRM(models.Model):
     """Campos comunes para la sincronización con el CRM Binn."""
 
@@ -43,7 +65,7 @@ class SincronizableCRM(models.Model):
         self.save(update_fields=["sincronizado_crm", "sincronizado_en"])
 
 
-class Cotizacion(SincronizableCRM):
+class Cotizacion(ConWhatsAppCliente, SincronizableCRM):
     """Pedido armado en el configurador y enviado a Melloco por WhatsApp."""
 
     nombre_cliente = models.CharField("nombre del cliente", max_length=120)
@@ -54,6 +76,9 @@ class Cotizacion(SincronizableCRM):
     fecha_cumple = models.DateField("fecha del cumpleaños")
     receta = models.CharField(max_length=40, choices=Receta.choices)
     estilo = models.CharField(max_length=20, choices=Estilo.choices)
+    estado = models.CharField(
+        max_length=20, choices=EstadoPedido.choices, default=EstadoPedido.NUEVO, db_index=True
+    )
 
     class Meta:
         ordering = ["-creado_en"]
@@ -75,11 +100,13 @@ class Cotizacion(SincronizableCRM):
             "receta_nombre": self.get_receta_display(),
             "estilo": self.estilo,
             "estilo_nombre": self.get_estilo_display(),
+            "estado": self.estado,
+            "estado_nombre": self.get_estado_display(),
             "creado_en": self.creado_en.isoformat(),
         }
 
 
-class LeadCumple(SincronizableCRM):
+class LeadCumple(ConWhatsAppCliente, SincronizableCRM):
     """Registro de 'La Ruleta de Melloco': regalo sorpresa antes del cumpleaños."""
 
     nombre_humano = models.CharField("nombre del humano", max_length=120)
@@ -88,6 +115,8 @@ class LeadCumple(SincronizableCRM):
     telefono = models.CharField(
         "teléfono", max_length=20, validators=[telefono_validator]
     )
+
+    regalo_enviado = models.BooleanField("regalo enviado", default=False, db_index=True)
 
     class Meta:
         ordering = ["-creado_en"]
@@ -124,5 +153,6 @@ class LeadCumple(SincronizableCRM):
             "fecha_cumple": self.fecha_cumple.isoformat(),
             "proximo_cumple": self.proximo_cumple().isoformat(),
             "fecha_regalo": self.fecha_regalo().isoformat(),
+            "regalo_enviado": self.regalo_enviado,
             "creado_en": self.creado_en.isoformat(),
         }

@@ -17,6 +17,13 @@ Abrir http://127.0.0.1:8000 · Panel de Melloco: http://127.0.0.1:8000/admin
 
 Tests: `python manage.py test pedidos`
 
+## Panel y equipo
+
+1. **Administrador** (una sola vez): `python manage.py createsuperuser`. Tiene acceso total, incluido crear usuarios.
+2. **Personas del equipo**: el administrador entra a `/admin/` → *Usuarios* → *Añadir usuario*, pone usuario y contraseña, y en la siguiente pantalla marca **Es staff** y agrega el grupo **Atención de pedidos**.
+
+Con ese grupo pueden ver y editar pedidos y cumpleaños, pero no borrarlos ni gestionar usuarios. En la lista de *Cotizaciones* cambian el estado (Nuevo → Confirmado → En preparación → Entregado, o Cancelado) directamente en la tabla y le escriben al cliente con *Escribir por WhatsApp*. En *Leads de cumpleaños* marcan **Regalo enviado** y filtran los que faltan.
+
 ## Variables de entorno
 
 | Variable | Para qué |

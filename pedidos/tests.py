@@ -567,3 +567,83 @@ class ChatTests(TestCase):
 def quote_mensaje(texto):
     from urllib.parse import quote
     return quote(texto)
+
+
+# ---------------------------------------------------------------------------
+# Spec 006 · Equipo y gestión de pedidos
+# ---------------------------------------------------------------------------
+
+class EquipoYGestionTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import Group, User
+        self.pedido = Cotizacion.objects.create(
+            nombre_cliente="Ana", telefono="0991234567", nombre_perro="Rocky",
+            fecha_cumple=datetime.date(2099, 12, 15), receta="carne_pure", estilo="huesito")
+        self.lead = LeadCumple.objects.create(nombre_humano="Ana", nombre_perro="Luna",
+                                              fecha_cumple=datetime.date(2021, 3, 10), telefono="0991234567")
+        self.equipo = User.objects.create_user("vale", password="clave-de-prueba-123", is_staff=True)
+        self.equipo.groups.add(Group.objects.get(name="Atención de pedidos"))
+        self.client.force_login(self.equipo)
+
+    def test_grupo_con_permisos_justos(self):
+        from django.contrib.auth.models import Group
+        permisos = set(Group.objects.get(name="Atención de pedidos").permissions.values_list("codename", flat=True))
+        self.assertEqual(permisos, {"view_cotizacion", "change_cotizacion", "view_leadcumple", "change_leadcumple"})
+
+    def test_el_equipo_ve_y_edita_pero_no_borra_ni_gestiona_usuarios(self):
+        self.assertEqual(self.client.get(reverse("admin:pedidos_cotizacion_changelist")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("admin:pedidos_leadcumple_changelist")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("admin:pedidos_cotizacion_delete", args=[self.pedido.pk])).status_code, 403)
+        self.assertEqual(self.client.get(reverse("admin:auth_user_changelist")).status_code, 403)
+        self.assertEqual(self.client.get(reverse("admin:auth_user_add")).status_code, 403)
+
+    def test_pedidos_nuevos_entran_como_nuevo(self):
+        self.assertEqual(self.pedido.estado, "nuevo")
+        cache.clear()
+        self.client.post(reverse("pedidos:confirmar"), PEDIDO, **HTMX)
+        self.assertEqual(Cotizacion.objects.latest("creado_en").estado, "nuevo")
+
+    def test_estado_se_cambia_desde_la_lista_y_se_filtra(self):
+        url = reverse("admin:pedidos_cotizacion_changelist")
+        r = self.client.get(url)
+        self.assertContains(r, 'name="form-0-estado"')
+        self.assertContains(r, "En preparación")
+        r = self.client.post(url, {
+            "form-TOTAL_FORMS": "1", "form-INITIAL_FORMS": "1",
+            "form-0-id": str(self.pedido.pk), "form-0-estado": "confirmado", "_save": "Guardar",
+        })
+        self.assertEqual(r.status_code, 302)
+        self.pedido.refresh_from_db()
+        self.assertEqual(self.pedido.estado, "confirmado")
+        self.assertContains(self.client.get(url + "?estado__exact=confirmado"), "Rocky")
+        self.assertNotContains(self.client.get(url + "?estado__exact=entregado"), ">Rocky<")
+
+    def test_enlace_whatsapp_del_cliente(self):
+        r = self.client.get(reverse("admin:pedidos_cotizacion_changelist"))
+        self.assertContains(r, 'href="https://wa.me/593991234567"')
+        self.assertContains(r, "Escribir por WhatsApp")
+
+    def test_numeros_a_formato_internacional(self):
+        from .models import whatsapp_internacional
+        self.assertEqual(whatsapp_internacional("0991234567"), "593991234567")
+        self.assertEqual(whatsapp_internacional("+593991234567"), "593991234567")
+        self.assertEqual(whatsapp_internacional("593991234567"), "593991234567")
+
+    def test_regalo_enviado_desde_la_lista(self):
+        url = reverse("admin:pedidos_leadcumple_changelist")
+        self.assertContains(self.client.get(url), 'name="form-0-regalo_enviado"')
+        self.client.post(url, {
+            "form-TOTAL_FORMS": "1", "form-INITIAL_FORMS": "1",
+            "form-0-id": str(self.lead.pk), "form-0-regalo_enviado": "on", "_save": "Guardar",
+        })
+        self.lead.refresh_from_db()
+        self.assertTrue(self.lead.regalo_enviado)
+        self.assertContains(self.client.get(url + "?regalo_enviado__exact=0"), "0 leads")
+
+    @override_settings(BINN_API_TOKEN="secreto")
+    def test_estado_y_regalo_viajan_a_binn(self):
+        self.assertEqual(self.pedido.to_crm()["estado"], "nuevo")
+        self.assertEqual(self.pedido.to_crm()["estado_nombre"], "Nuevo")
+        self.assertIs(self.lead.to_crm()["regalo_enviado"], False)
+        r = self.client.get(reverse("pedidos:api_cotizaciones"), HTTP_X_BINN_TOKEN="secreto")
+        self.assertEqual(r.json()["resultados"][0]["estado"], "nuevo")
