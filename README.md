@@ -49,7 +49,7 @@ Lo que sigue explica cómo hacerlo desde el panel de Django, por si hace falta:
 
 | Variable | Para qué |
 |---|---|
-| `CHESTERS_WHATSAPP` | Número de Melloco, solo dígitos con código de país (ej. `593991234567`). **Obligatorio cambiarlo.** |
+| `CHESTERS_WHATSAPP` | Número de Melloco de respaldo. **Se configura en el gestor → Ajustes** (spec 019); esta variable solo se usa si nadie lo configuró. |
 | `DJANGO_DEBUG=0` | Producción. Activa HTTPS obligatorio, cookies seguras y HSTS. |
 | `DJANGO_SECRET_KEY` | Obligatoria con `DJANGO_DEBUG=0`: sin ella el sitio no arranca. |
 | `DJANGO_ALLOWED_HOSTS` | Dominios del sitio, separados por coma (ej. `chesters.ec,www.chesters.ec`). |

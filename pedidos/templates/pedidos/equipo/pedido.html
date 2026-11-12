@@ -43,10 +43,15 @@
           <button type="submit" class="min-h-12 w-full rounded-full bg-collar-600 px-6 font-extrabold text-white transition hover:bg-collar-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-collar-600/30">{{ siguiente.1 }}</button>
         </form>
       {% endif %}
+      {% if puede_confirmar %}
       <form method="post" action="{% url 'pedidos:equipo_accion' p.pk %}" data-confirmar="¿Cancelar el pedido de {{ p.nombre_perro }}? Esto no se puede deshacer desde el gestor.">
         {% csrf_token %}<input type="hidden" name="tipo" value="estado"><input type="hidden" name="valor" value="cancelado">
         <button type="submit" class="min-h-12 w-full rounded-full px-6 text-sm font-bold text-slate-500 ring-1 ring-stone-200 transition hover:text-collar-700 hover:ring-collar-200">Cancelar pedido</button>
       </form>
+      {% endif %}
+      {% if p.estado == 'nuevo' and not puede_confirmar %}
+        <p class="rounded-2xl bg-crema-50 px-4 py-3 text-sm text-slate-700 ring-1 ring-crema-200">Este pedido lo confirma Atención de pedidos con la familia. Cuando esté confirmado, aparece en Cocina.</p>
+      {% endif %}
     </div>
   {% endif %}
 </section>

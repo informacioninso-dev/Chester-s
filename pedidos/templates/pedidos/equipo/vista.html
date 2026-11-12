@@ -19,6 +19,12 @@
     </div>
   {% endif %}
 
+  {% if whatsapp_de_prueba %}
+    <a href="{% url 'pedidos:equipo_ajustes' %}" role="alert" class="mb-4 flex items-center gap-3 rounded-2xl bg-collar-600 px-4 py-3 text-white shadow-sm transition hover:bg-collar-700">
+      <svg class="h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 7v4m0 3h.01M8.6 3.3 1.9 15a1.6 1.6 0 0 0 1.4 2.4h13.4a1.6 1.6 0 0 0 1.4-2.4L11.4 3.3a1.6 1.6 0 0 0-2.8 0Z"/></svg>
+      <span class="min-w-0 flex-1 text-sm"><strong class="font-extrabold">Los pedidos todavía van a un número de prueba.</strong> Toca aquí para poner el WhatsApp de Melloco.</span>
+    </a>
+  {% endif %}
   <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
     <div>
       <h1 class="font-display text-3xl font-medium tracking-tight">Hoy, {{ hoy|date:"l j \d\e F" }}</h1>

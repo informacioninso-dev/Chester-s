@@ -59,9 +59,11 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 
 - 2026-11-12 · En la vista Cocina la receta está a la mano (spec 017): "Ver receta" se despliega en la misma fila y tocar el pedido abre el detalle en "Cómo se hace". Pedido del dueño: en la cocina lo primero es cómo se hace.
 
+- 2026-11-12 · El WhatsApp de Melloco se configura en **Ajustes** del gestor (spec 019, modelo `Ajustes` con pk=1). `CHESTERS_WHATSAPP` queda solo como respaldo si nadie lo configuró. Confirmar y cancelar pedidos es solo de Atención y del administrador.
+
 ## Pendientes conocidos
 
-- **Respaldo diario automático de la base de Chester’s (spec 018, hallazgo 2): hoy no hay ningún respaldo.** También queda pendiente que Cocina y Reparto no puedan confirmar ni cancelar pedidos (hallazgo 4).
+- **Respaldo diario automático de la base de Chester’s (spec 018, hallazgo 2): hoy no hay ningún respaldo.**
 - Revisar con un abogado el texto de `/privacidad/` (spec 001) y agregar razón social/RUC del responsable.
 - Mover el webhook a una cola (Celery/RQ) si sube el volumen.
 - Dar de alta el dominio en Google Search Console y crear el perfil de Google Business (dirección y horario también irían al JSON-LD).

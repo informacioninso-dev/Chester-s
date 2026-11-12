@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.admin.forms import AdminAuthenticationForm
 from django.utils.html import format_html
 
-from .models import Cotizacion, Forma, LeadCumple, Perrito, Receta
+from .models import Ajustes, Cotizacion, Forma, LeadCumple, Perrito, Receta
 from .seguridad import FrenoDeIntentos
 
 
@@ -70,3 +70,11 @@ class RecetarioAdmin(admin.ModelAdmin):
     list_editable = ("disponible", "orden")
     search_fields = ("nombre", "clave")
     readonly_fields = ("clave", "creado_en", "actualizado_en")
+
+
+@admin.register(Ajustes)
+class AjustesAdmin(admin.ModelAdmin):
+    """Ajustes (spec 019). Se cambian en /equipo/ajustes/; aquí, solo para revisar."""
+
+    list_display = ("__str__", "whatsapp", "actualizado_por", "actualizado_en")
+    readonly_fields = ("actualizado_en",)

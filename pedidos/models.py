@@ -323,3 +323,36 @@ class LeadCumple(ConWhatsAppCliente, ConFichaDePerrito, SincronizableCRM):
             "regalo_enviado": self.regalo_enviado,
             "creado_en": self.creado_en.isoformat(),
         }
+
+
+# ---------------------------------------------------------------------------
+# Ajustes del negocio (spec 019): los cambia el administrador desde el gestor.
+# ---------------------------------------------------------------------------
+
+NUMERO_DE_PRUEBA = "593990000000"
+
+
+class Ajustes(models.Model):
+    """Una sola fila (pk=1). Lo que no esté aquí sale de las variables del servidor."""
+
+    whatsapp = models.CharField("WhatsApp de Melloco", max_length=15, blank=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    actualizado_por = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                                        related_name="+", verbose_name="actualizado por")
+
+    class Meta:
+        verbose_name = "ajustes"
+        verbose_name_plural = "ajustes"
+
+    def __str__(self):
+        return "Ajustes del negocio"
+
+    @classmethod
+    def actuales(cls):
+        return cls.objects.get_or_create(pk=1)[0]
+
+
+def whatsapp_melloco():
+    """Número al que llegan los pedidos: el de Ajustes; si nadie lo configuró, el del servidor."""
+    numero = Ajustes.objects.filter(pk=1).values_list("whatsapp", flat=True).first()
+    return numero or settings.CHESTERS_WHATSAPP

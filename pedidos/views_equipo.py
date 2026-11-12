@@ -28,7 +28,8 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from .forms import INPUT
 from .seguridad import FrenoDeIntentos
-from .models import Cotizacion, EstadoPedido, Forma, FormaPago, LeadCumple, Perrito, Receta
+from .models import (NUMERO_DE_PRUEBA, Ajustes, Cotizacion, EstadoPedido, Forma, FormaPago, LeadCumple, Perrito,
+                     Receta, whatsapp_internacional, whatsapp_melloco)
 
 ATENCION, COCINA, REPARTO = "Atención de pedidos", "Cocina", "Reparto"
 GRUPOS_EQUIPO = (ATENCION, COCINA, REPARTO)
@@ -74,6 +75,11 @@ def es_del_equipo(user):
 
 
 def puede_asignar(user, grupos):
+    return user.is_superuser or ATENCION in grupos
+
+
+def puede_confirmar(user, grupos):
+    """Spec 019: confirmar (acordarlo con la familia) y cancelar es de Atención y del administrador."""
     return user.is_superuser or ATENCION in grupos
 
 
@@ -202,7 +208,7 @@ def _filtro_vista(vista, user):
     return Q(estado__in=ACTIVOS) | POR_COBRAR
 
 
-def _accion_rapida(pedido, vista, grupos):
+def _accion_rapida(pedido, vista, grupos, confirma=True):
     """La única acción que se ofrece en la fila, según la vista: (tipo, valor, texto)."""
     if pedido.estado == EstadoPedido.ENTREGADO and not pedido.cobrado:
         return ("cobrar", "", "Marcar cobrado")
@@ -217,6 +223,8 @@ def _accion_rapida(pedido, vista, grupos):
             return ("tomar_reparto", "", "Lo llevo yo")
         return ("estado", EstadoPedido.ENTREGADO, "Marcar entregado")
     if vista in ("todo", "asignados") and pedido.estado in SIGUIENTE:
+        if pedido.estado == EstadoPedido.NUEVO and not confirma:
+            return None  # lo confirma Atención
         return ("estado", *SIGUIENTE[pedido.estado])
     return None
 
@@ -251,7 +259,8 @@ def _contexto_vista(request, vista, busqueda):
     else:
         lista = lista.order_by("fecha_cumple", F("hora_entrega").asc(nulls_last=True), "creado_en")[:300]
 
-    filas = [{"p": p, "cuando": _cuando(p, hoy), "accion": _accion_rapida(p, vista, grupos)} for p in lista]
+    confirma = puede_confirmar(user, grupos)
+    filas = [{"p": p, "cuando": _cuando(p, hoy), "accion": _accion_rapida(p, vista, grupos, confirma)} for p in lista]
 
     grupos_vista = []
     if vista == "asignados":
@@ -290,6 +299,7 @@ def _contexto_vista(request, vista, busqueda):
         "falta_asignar": falta_asignar,
         "sin_pedidos": not Cotizacion.objects.exists(),
         "actualizado": timezone.localtime(),
+        "whatsapp_de_prueba": user.is_superuser and whatsapp_melloco() == NUMERO_DE_PRUEBA,
     }
 
 
@@ -326,6 +336,9 @@ def _aplicar(request, pedido):
                     (pedido.estado in SIGUIENTE and SIGUIENTE[pedido.estado][0] == nuevo)
         if not permitido:
             return False, "Ese cambio de estado no es posible."
+        es_de_atencion = nuevo == EstadoPedido.CANCELADO or pedido.estado == EstadoPedido.NUEVO
+        if es_de_atencion and not puede_confirmar(request.user, grupos):
+            return False, "Confirmar y cancelar pedidos lo hace Atención de pedidos."
         anterior = estado_legible(pedido)
         if nuevo != EstadoPedido.CANCELADO:
             request._deshacer = {"tipo": "deshacer", "valor": pedido.estado}
@@ -338,6 +351,8 @@ def _aplicar(request, pedido):
         valor = request.POST.get("valor")
         if ANTERIOR.get(pedido.estado) != valor:
             return False, "Ya no se puede deshacer ese cambio."
+        if valor == EstadoPedido.NUEVO and not puede_confirmar(request.user, grupos):
+            return False, "Deshacer una confirmación lo hace Atención de pedidos."
         anterior = estado_legible(pedido)
         pedido.estado = valor
         pedido.save(update_fields=["estado"])
@@ -462,10 +477,15 @@ def pedido(request, pk):
     grupos = request.grupos
     cambios = (LogEntry.objects.filter(content_type=ContentType.objects.get_for_model(Cotizacion), object_id=str(p.pk))
                .select_related("user").order_by("-action_time")[:10])
+    confirma = puede_confirmar(request.user, grupos)
+    siguiente = SIGUIENTE.get(p.estado)
+    if p.estado == EstadoPedido.NUEVO and not confirma:
+        siguiente = None
     return render(request, "pedidos/equipo/pedido.html", {
         "p": p,
         "cuando": _cuando(p, timezone.localdate()),
-        "siguiente": SIGUIENTE.get(p.estado),
+        "siguiente": siguiente,
+        "puede_confirmar": confirma,
         "activo": p.estado in ACTIVOS,
         "puede_asignar": puede_asignar(request.user, grupos),
         "es_cocina": COCINA in grupos,
@@ -788,4 +808,51 @@ def persona(request, pk=None):
     return render(request, "pedidos/equipo/persona.html", {
         "u": u, "form": form, "roles": ROLES, "credenciales": credenciales, "mensaje": mensaje,
         "roles_actuales": _roles_de(u) if u else [], "es_yo": u == request.user,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Ajustes (spec 019): lo que el administrador configura sin ayuda técnica
+# ---------------------------------------------------------------------------
+
+class AjustesForm(forms.Form):
+    whatsapp = forms.CharField(
+        label="WhatsApp de Melloco", max_length=25,
+        widget=forms.TextInput(attrs={"class": INPUT, "type": "tel", "inputmode": "tel", "autocomplete": "off",
+                                      "placeholder": "0991234567"}),
+        error_messages={"required": "Escribe el número de WhatsApp al que deben llegar los pedidos."},
+    )
+
+    def clean_whatsapp(self):
+        numero = whatsapp_internacional(self.cleaned_data["whatsapp"])
+        if not (11 <= len(numero) <= 15):
+            raise forms.ValidationError("Revisa el número: escríbelo como en tu celular, por ejemplo 0991234567.")
+        return numero
+
+
+@require_http_methods(["GET", "POST"])
+@solo_administrador
+def ajustes(request):
+    actuales = Ajustes.actuales()
+    if request.method == "POST":
+        form = AjustesForm(request.POST)
+        if form.is_valid():
+            actuales.whatsapp = form.cleaned_data["whatsapp"]
+            actuales.actualizado_por = request.user
+            actuales.save()
+            _registrar(request, actuales, f"WhatsApp de Melloco: {actuales.whatsapp}")
+            messages.success(request, "Listo: los pedidos ahora llegan a ese WhatsApp. Pruébalo con el botón.")
+            return HttpResponseRedirect(reverse("pedidos:equipo_ajustes"))
+    else:
+        actual = whatsapp_melloco()  # con el número de prueba el campo empieza vacío
+        form = AjustesForm(initial={"whatsapp": "" if actual == NUMERO_DE_PRUEBA else actual})
+
+    numero = whatsapp_melloco()
+    recetas_sin_pasos = list(Receta.objects.filter(disponible=True, pasos=""))
+    formas_sin_armar = list(Forma.objects.filter(disponible=True, como_armarla=""))
+    personas = get_user_model().objects.filter(is_active=True, is_superuser=False,
+                                               groups__name__in=GRUPOS_EQUIPO).distinct().count()
+    return render(request, "pedidos/equipo/ajustes.html", {
+        "form": form, "numero": numero, "de_prueba": numero == NUMERO_DE_PRUEBA, "actuales": actuales,
+        "recetas_sin_pasos": recetas_sin_pasos, "formas_sin_armar": formas_sin_armar, "personas": personas,
     })

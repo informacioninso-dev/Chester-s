@@ -1607,3 +1607,85 @@ class SeguridadSpec018Tests(TestCase):
         from django.conf import settings
         self.assertEqual(settings.SESSION_COOKIE_AGE, 12 * 60 * 60)
         self.assertTrue(settings.SESSION_SAVE_EVERY_REQUEST)
+
+
+class AjustesYConfirmarTests(TestCase):
+    """Spec 019: el administrador configura el WhatsApp; solo Atención confirma y cancela."""
+
+    def setUp(self):
+        cache.clear()
+        self.jefe = persona("jefe", is_superuser=True, is_staff=True, first_name="Fer")
+        self.ana = persona("ana", "Atención de pedidos")
+        self.chef = persona("chef", "Cocina")
+        self.moto = persona("moto", "Reparto")
+
+    def accion(self, p, tipo, valor="", **extra):
+        return self.client.post(reverse("pedidos:equipo_accion", args=[p.pk]),
+                                {"tipo": tipo, "valor": valor, "origen": "lista", "ver": "todo", **extra}, **HTMX)
+
+    @override_settings(CHESTERS_WHATSAPP="593990000000")
+    def test_el_administrador_configura_el_whatsapp(self):
+        self.client.force_login(self.jefe)
+        self.assertContains(self.client.get(reverse("pedidos:equipo")), "Los pedidos todavía van a un número de prueba.")
+        self.assertContains(self.client.get(reverse("pedidos:equipo")), f'href="{reverse("pedidos:equipo_ajustes")}"')
+        r = self.client.post(reverse("pedidos:equipo_ajustes"), {"whatsapp": "099 123 4567"}, follow=True)
+        self.assertContains(r, "Listo: los pedidos ahora llegan a ese WhatsApp.")
+        self.assertContains(r, "+593991234567")
+        self.assertNotContains(self.client.get(reverse("pedidos:equipo")), "número de prueba")
+        self.client.logout()
+        self.assertContains(self.client.get(reverse("pedidos:index")), "https://wa.me/593991234567")
+        with mock.patch("pedidos.views.notificar_binn"):
+            r = self.client.post(reverse("pedidos:confirmar"), PEDIDO, **HTMX)
+        self.assertTrue(enlace_whatsapp(r).startswith("https://wa.me/593991234567?text="))
+
+    def test_numero_invalido_y_solo_el_administrador(self):
+        self.client.force_login(self.jefe)
+        r = self.client.post(reverse("pedidos:equipo_ajustes"), {"whatsapp": "123"})
+        self.assertContains(r, "Revisa el número")
+        self.client.force_login(self.ana)
+        self.assertEqual(self.client.get(reverse("pedidos:equipo_ajustes")).status_code, 403)
+        self.assertNotContains(self.client.get(reverse("pedidos:equipo")), f'href="{reverse("pedidos:equipo_ajustes")}"')
+
+    def test_lista_para_empezar(self):
+        self.client.force_login(self.jefe)
+        html = self.client.get(reverse("pedidos:equipo_ajustes")).content.decode()
+        self.assertIn("Para empezar con clientes reales", html)
+        self.assertIn("Carne y puré", html)          # sin pasos todavía
+        self.assertIn("Forma: Huesito", html)        # sin cómo armarla
+        self.assertIn("3 personas con acceso", html)
+
+    def test_cocina_y_reparto_no_confirman_ni_cancelan(self):
+        nuevo = pedido("Nuevito")
+        confirmado = pedido("Listo", estado="confirmado")
+        for quien in (self.chef, self.moto):
+            self.client.force_login(quien)
+            html = self.client.get(reverse("pedidos:equipo"), {"ver": "todo"}).content.decode()
+            self.assertNotIn(">Confirmar pedido<", html)
+            detalle = self.client.get(reverse("pedidos:equipo_pedido", args=[nuevo.pk])).content.decode()
+            self.assertNotIn("Cancelar pedido", detalle)
+            self.assertIn("Este pedido lo confirma Atención de pedidos", detalle)
+            self.assertContains(self.accion(nuevo, "estado", "confirmado"), "Confirmar y cancelar pedidos lo hace Atención")
+            self.accion(confirmado, "estado", "cancelado")
+        nuevo.refresh_from_db(); confirmado.refresh_from_db()
+        self.assertEqual((nuevo.estado, confirmado.estado), ("nuevo", "confirmado"))
+
+    def test_cocina_si_pasa_a_cocina_y_no_deshace_confirmaciones(self):
+        p = pedido(estado="confirmado")
+        self.client.force_login(self.chef)
+        self.accion(p, "estado", "en_preparacion")
+        p.refresh_from_db()
+        self.assertEqual(p.estado, "en_preparacion")
+        otro = pedido("Otro", estado="confirmado")
+        self.accion(otro, "deshacer", "nuevo")
+        otro.refresh_from_db()
+        self.assertEqual(otro.estado, "confirmado")
+
+    def test_atencion_y_el_administrador_si(self):
+        for quien in (self.ana, self.jefe):
+            p = pedido(f"De {quien.username}")
+            self.client.force_login(quien)
+            self.assertIn(">Confirmar pedido<", self.client.get(reverse("pedidos:equipo"), {"ver": "todo"}).content.decode())
+            self.accion(p, "estado", "confirmado")
+            self.accion(p, "estado", "cancelado")
+            p.refresh_from_db()
+            self.assertEqual(p.estado, "cancelado")

@@ -47,6 +47,8 @@
         {% if request.user.is_superuser %}
         <li><a href="{% url 'pedidos:equipo_personas' %}" {% if 'persona' in seccion %}aria-current="page"{% endif %}
                class="inline-flex min-h-11 items-center border-b-[3px] px-4 text-sm font-extrabold transition {% if 'persona' in seccion %}border-collar-500 text-white{% else %}border-transparent text-stone-300 hover:text-white{% endif %}">Equipo</a></li>
+        <li><a href="{% url 'pedidos:equipo_ajustes' %}" {% if seccion == 'equipo_ajustes' %}aria-current="page"{% endif %}
+               class="inline-flex min-h-11 items-center border-b-[3px] px-4 text-sm font-extrabold transition {% if seccion == 'equipo_ajustes' %}border-collar-500 text-white{% else %}border-transparent text-stone-300 hover:text-white{% endif %}">Ajustes</a></li>
         {% endif %}
       </ul>
       {% endwith %}

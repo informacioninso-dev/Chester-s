@@ -20,7 +20,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from .crm import notificar_binn
 from .forms import LeadCumpleForm, PedidoForm
-from .models import Cotizacion, Forma, LeadCumple, Receta
+from .models import Cotizacion, Forma, LeadCumple, Receta, whatsapp_melloco
 
 PASOS_NOMBRES = ["Datos", "Receta", "Forma", "Confirmar"]
 
@@ -126,7 +126,7 @@ def _contexto_configurador(paso, datos, form=None):
         "errores": form.errors if form.is_bound else {},
         "hay_recetas": Receta.objects.filter(disponible=True).exists(),
         "hay_formas": Forma.objects.filter(disponible=True).exists(),
-        "whatsapp": settings.CHESTERS_WHATSAPP,
+        "whatsapp": whatsapp_melloco(),
     }
 
 
@@ -153,7 +153,7 @@ def mensaje_whatsapp(cotizacion):
 
 
 def url_whatsapp(cotizacion):
-    return f"https://wa.me/{settings.CHESTERS_WHATSAPP}?text={quote(mensaje_whatsapp(cotizacion))}"
+    return f"https://wa.me/{whatsapp_melloco()}?text={quote(mensaje_whatsapp(cotizacion))}"
 
 
 def _render_parcial_o_pagina(request, parcial, contexto, status=200):
@@ -171,7 +171,7 @@ def _contexto_index():
         {
             "lead_form": LeadCumpleForm(),
             "lead_ok": None,
-            "whatsapp": settings.CHESTERS_WHATSAPP,
+            "whatsapp": whatsapp_melloco(),
             "dias_regalo": settings.CHESTERS_DIAS_REGALO,
             **contexto_chat_inicial(),
             "hoy": timezone.localdate(),
@@ -201,7 +201,7 @@ def _datos_estructurados(request):
         "url": request.build_absolute_uri(reverse("pedidos:index")),
         "logo": request.build_absolute_uri(static("pedidos/img/logo.jpg")),
         "image": request.build_absolute_uri(static("pedidos/img/logo.jpg")),
-        "telephone": f"+{settings.CHESTERS_WHATSAPP}",
+        "telephone": f"+{whatsapp_melloco()}",
         "servesCuisine": "Pasteles para perritos",
         "areaServed": {"@type": "Country", "name": "Ecuador"},
     }
@@ -234,7 +234,7 @@ def privacidad(request):
         "descripcion": "Qué datos guarda Chester’s, para qué los usa, con quién los comparte "
                        "y cómo pedir que los corrijan o los borren (LOPDP, Ecuador).",
         "og_descripcion": "Qué datos guardamos y cómo ejercer tus derechos.",
-        "whatsapp": settings.CHESTERS_WHATSAPP,
+        "whatsapp": whatsapp_melloco(),
     })
 
 
@@ -298,7 +298,7 @@ def confirmar_pedido(request):
     cotizacion = _guardar_cotizacion(request, form)
     if cotizacion is None:
         ctx = _contexto_configurador(PedidoForm.TOTAL_PASOS, datos)
-        ctx.update(limite_envios="configurador", whatsapp=settings.CHESTERS_WHATSAPP)
+        ctx.update(limite_envios="configurador", whatsapp=whatsapp_melloco())
         return _render_parcial_o_pagina(request, "pedidos/partials/configurador.html", ctx, status=429)
 
     wa_url = url_whatsapp(cotizacion)
@@ -325,7 +325,7 @@ def registrar_lead(request):
         limite = LimiteEnvios(request, "ruleta")
         if limite.superado():
             ctx = {"lead_form": form, "lead_ok": None, "limite_envios": "ruleta",
-                   "whatsapp": settings.CHESTERS_WHATSAPP, "hoy": timezone.localdate()}
+                   "whatsapp": whatsapp_melloco(), "hoy": timezone.localdate()}
             return _render_parcial_o_pagina(request, "pedidos/partials/ruleta.html", ctx, status=429)
         limite.sumar()
 
@@ -444,7 +444,7 @@ def _contexto_chat(campo, datos, mensajes, preguntar=True):
         "chat_mensajes": mensajes,
         "chat_campo": campo,
         "chat_tipo": "fin" if sin_opciones else PREGUNTAS_CHAT.get(campo, "fin"),
-        "chat_wa_url": f"https://wa.me/{settings.CHESTERS_WHATSAPP}" if sin_opciones else "",
+        "chat_wa_url": f"https://wa.me/{whatsapp_melloco()}" if sin_opciones else "",
         "chat_etiqueta": ETIQUETAS_CHAT.get(campo, ""),
         "chat_opciones": opciones,
         "chat_ocultos": [(k, v) for k, v in datos.items() if k not in (campo, "acepta_datos")],
