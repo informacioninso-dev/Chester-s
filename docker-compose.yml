@@ -1,11 +1,13 @@
 # Demo de Chester's en el droplet de Licitar (spec 008).
 # Uso en /opt/chesters: docker compose up -d --build
 # El tráfico llega por el Caddy de Licitar (bloque chesters.binnso.com en su deploy/Caddyfile).
+# Spec 018: red propia `chesters_proxy`, donde solo están Caddy y Chester's. Chester's no ve la base
+# ni el redis de Licitar. Antes del primer despliegue: `docker network create chesters_proxy` y
+# `docker network connect chesters_proxy licitar-caddy-1`.
 
 services:
   chesters:
-    # Nunca "web": en la red licitar_default ese nombre es el de Licitar y Caddy
-    # le mandaría a Chester's el tráfico de licitar.binnso.com.
+    # Nunca "web": Caddy también está en la red de Licitar, donde "web" es Licitar (incidente del 12-nov).
     build: .
     image: chesters:latest
     container_name: chesters-web
@@ -21,7 +23,7 @@ services:
     restart: unless-stopped
     # 1 GB compartido con Licitar: un worker con hilos y un tope de memoria.
     mem_limit: 200m
-    networks: [licitar]
+    networks: [proxy]
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
@@ -30,6 +32,6 @@ volumes:
   datos:
 
 networks:
-  licitar:
+  proxy:
     external: true
-    name: licitar_default
+    name: chesters_proxy

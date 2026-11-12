@@ -105,7 +105,7 @@ Los colores y las fuentes están en `tailwind.config.js`; los estilos propios (a
 
 ## Demo en el servidor de Licitar (spec 008)
 
-`https://chesters.binnso.com` corre en el droplet de Licitar (`root@167.99.2.102`), en `/opt/chesters`, con su propio contenedor (`chesters-web`) y su base SQLite en el volumen `chesters_datos`. El HTTPS lo da el Caddy de Licitar: el bloque `chesters.binnso.com` está en `deploy/Caddyfile` **del repo de Licitar**.
+`https://chesters.binnso.com` corre en el droplet de Licitar (`root@167.99.2.102`), en `/opt/chesters`, con su propio contenedor (`chesters-web`) y su base SQLite en el volumen `chesters_datos`. Está en su propia red de Docker, `chesters_proxy`, que comparte solo con el Caddy de Licitar (spec 018). El HTTPS lo da el Caddy de Licitar: el bloque `chesters.binnso.com` está en `deploy/Caddyfile` **del repo de Licitar**.
 
 - **Secretos:** `/opt/chesters/.env.production` en el servidor, nunca en el repo. Lleva `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS` y `CHESTERS_WHATSAPP`.
 - **Publicar lo último** (desde Git Bash, con todo en commit):
