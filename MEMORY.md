@@ -7,6 +7,8 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 
 - 2026-11-11 · **Claude (o cualquier agente de IA) NO va como coautor.** No agregar `Co-Authored-By` ni firmas de IA en commits ni en PRs — decisión del dueño del repo.
 
+- 2026-11-12 · **Melloco es el Director de Calidad de Chester’s** (hermano perruno de Chester). Todo texto nuevo debe dejarlo claro: la primera vez que aparece en cada pantalla o sección va con su cargo ("Melloco, nuestro Director de Calidad"), y en descripciones para buscadores y redes también. Las respuestas y la venta las hace "la familia de Chester" — decisión del dueño del repo: el copy no lo dejaba claro.
+
 ## Decisiones
 
 - 2026-11-11 · Tailwind compilado en local y **el CSS resultante se versiona** (spec 003): el servidor no necesita Node. Reemplaza la decisión anterior de usar el CDN. Hay que regenerarlo al tocar clases (ver README) — si no, la clase nueva no tendrá estilo.
