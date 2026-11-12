@@ -369,8 +369,15 @@ class RendimientoTests(TestCase):
         for archivo in ("logo-640.webp", "logo.webp", "chester-avatar-96.webp", "chester-avatar.webp"):
             self.assertContains(r, f"/static/pedidos/img/{archivo}")
             self.assertTrue((RAIZ / "pedidos/static/pedidos/img" / archivo).exists(), archivo)
-        self.assertContains(r, 'type="image/webp"', count=4)  # menú, portada, historia y chat
+        self.assertContains(r, 'type="image/webp"', count=6)  # menú, portada, Melloco, historia, chat y botón del chat
         self.assertContains(r, "/static/pedidos/img/logo.jpg")
+
+    def test_melloco_en_la_insignia_y_el_chat(self):
+        r = self.client.get(reverse("pedidos:index"))
+        self.assertContains(r, "/static/pedidos/img/melloco-96.webp", count=3)
+        self.assertContains(r, "/static/pedidos/img/melloco-96.jpg", count=3)
+        for archivo in ("melloco-96.webp", "melloco-192.webp", "melloco-96.jpg"):
+            self.assertTrue((RAIZ / "pedidos/static/pedidos/img" / archivo).exists(), archivo)
 
     def test_produccion_usa_estaticos_con_hash_y_whitenoise(self):
         r = correr_django("shell", "-c",
