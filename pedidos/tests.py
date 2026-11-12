@@ -718,6 +718,15 @@ class PasoAWhatsAppTests(TestCase):
         self.assertContains(paso4, "Confirmar pedido")
         self.assertNotContains(paso4, "Confirmar por WhatsApp")
 
+    def test_boton_del_chat_visible_en_celular(self):
+        # Spec 009: en el celular ya no se esconde en la portada; sobre los formularios queda
+        # compacto (texto solo para lectores de pantalla) y se esconde mientras se escribe.
+        html_portada = self.client.get(reverse("pedidos:index")).content.decode()
+        self.assertNotIn("zonas.push('inicio')", html_portada)
+        self.assertIn("chatTexto.classList.toggle('sr-only', compacto)", html_portada)
+        self.assertIn("addEventListener('focusin'", html_portada)
+        self.assertIn("addEventListener('focusout'", html_portada)
+
     def test_portada_primero_el_texto_y_boton_flotante_secundario(self):
         html_portada = self.client.get(reverse("pedidos:index")).content.decode()
         self.assertLess(html_portada.index("Su cumpleaños también merece pastel."), html_portada.index("pedidos/img/logo-640.webp"))
