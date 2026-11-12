@@ -1,6 +1,6 @@
 # 008 · Demo en el servidor de Licitar
 
-**Estado:** en curso
+**Estado:** hecha
 **Fecha:** 2026-11-12
 
 ## Qué y por qué
@@ -9,12 +9,12 @@ El dueño de Chester’s necesita ver el sitio funcionando en internet antes de 
 
 ## Criterios de aceptación
 
-- [ ] `https://chesters.binnso.com/` responde 200 con certificado válido y `http://` redirige a `https://`.
-- [ ] La demo no se indexa: todas las respuestas llevan `X-Robots-Tag: noindex, nofollow`.
-- [ ] Los pedidos y cumpleaños se guardan en un volumen de Docker y sobreviven a un nuevo despliegue (`DJANGO_DB_PATH`).
-- [ ] El freno anti-spam ve la IP real del visitante, no la de Caddy (`DJANGO_BEHIND_PROXY=1`).
-- [ ] Licitar sigue respondiendo 200 después del despliegue.
-- [ ] Ningún secreto queda en el repo: la clave y el número de WhatsApp viven en `/opt/chesters/.env.production`.
+- [x] `https://chesters.binnso.com/` responde 200 con certificado válido y `http://` redirige a `https://`.
+- [x] La demo no se indexa: todas las respuestas llevan `X-Robots-Tag: noindex, nofollow`.
+- [x] Los pedidos y cumpleaños se guardan en un volumen de Docker y sobreviven a un nuevo despliegue (`DJANGO_DB_PATH`).
+- [x] El freno anti-spam ve la IP real del visitante, no la de Caddy (`DJANGO_BEHIND_PROXY=1`).
+- [x] Licitar sigue respondiendo 200 después del despliegue.
+- [x] Ningún secreto queda en el repo: la clave y el número de WhatsApp viven en `/opt/chesters/.env.production`.
 
 Los criterios de infraestructura se verifican en el servidor (curl) y el resultado se anota abajo; `DJANGO_DB_PATH` tiene test.
 
@@ -33,4 +33,6 @@ Los criterios de infraestructura se verifican en el servidor (curl) y el resulta
 
 ## Resultado
 
-Pendiente.
+- 12-nov-2026: `https://chesters.binnso.com` responde 200 con certificado de Let's Encrypt, `http://` da 308 a `https://` y las respuestas llevan `X-Robots-Tag: noindex, nofollow` y HSTS. El contenedor usa ~76 MB de 200 MB.
+- Incidente: el servicio se llamaba `web`, igual que el de Licitar en la misma red, y Caddy repartía el tráfico de licitar.binnso.com entre los dos (Licitar dio 400 a ratos de 08:59 a 09:40, hora de Ecuador). Se renombró a `chesters`; Licitar volvió a 200.
+- 71 tests (1 nuevo: `DJANGO_DB_PATH`).

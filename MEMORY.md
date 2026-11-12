@@ -38,6 +38,8 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 
 - 2026-11-12 · WhatsApp **nunca se abre solo** (spec 007): confirmar guarda el pedido y muestra la pantalla de Melloco con "Enviar por WhatsApp" en otra pestaña y qué sigue. La redirección automática ocultaba esa pantalla y cambiaba la página sin aviso. Un solo verbo para pedir: "Pedir" / "Pedir su pastel"; el chat es el camino secundario (botón azul marino). Decisión del dueño tras la revisión de impeccable (26/40).
 
+- 2026-11-12 · La demo vive en el droplet de Licitar (spec 008), en la red `licitar_default`. El servicio de Docker se llama `chesters`, **nunca `web`**: ese es el nombre del de Licitar en la misma red, y con dos `web` Caddy le mandaba a Chester’s parte del tráfico de licitar.binnso.com (Licitar dio 400 a ratos entre las 08:59 y las 09:40 del 12-nov).
+
 ## Pendientes conocidos
 
 - Revisar con un abogado el texto de `/privacidad/` (spec 001) y agregar razón social/RUC del responsable.
