@@ -1,21 +1,20 @@
-# 009 · "Pedir con Melloco" visible en el celular
+# 009 · "Pedir con Melloco" siempre visible
 
 **Estado:** hecha
 **Fecha:** 2026-11-12
 
 ## Qué y por qué
 
-En el celular el botón flotante "Pedir con Melloco" casi nunca se veía. Se escondía en la portada, en el configurador y en la Ruleta, que juntos son casi toda la página. El dueño quiere que en el celular sí se vea, porque el chat es justamente la forma más cómoda de pedir desde el teléfono (spec 005).
+El botón flotante "Pedir con Melloco" casi nunca se veía en el celular: se escondía en la portada, en el configurador y en la Ruleta, que juntos son casi toda la página. El dueño quiere que se vea **siempre**, porque el chat es la forma más cómoda de pedir desde el teléfono (spec 005).
 
-Desde la spec 007 el título y "Pedir su pastel" van arriba en la portada y el botón flotante queda abajo, así que ya no se tapan. Esta spec reemplaza, **solo en el celular**, el criterio de la 007 que escondía el botón en la portada.
+Desde la spec 007 el título y "Pedir su pastel" van arriba en la portada y el botón flotante queda abajo, así que ya no se tapan. Esta spec reemplaza los criterios de la 005 y la 007 que escondían el botón.
 
 ## Criterios de aceptación
 
-- [x] En el celular (menos de 640 px), el botón "Pedir con Melloco" se ve completo en la portada y en la historia.
-- [x] En el celular, sobre el configurador y la Ruleta se reduce a la carita de Melloco (un círculo). Sigue diciendo "Pedir con Melloco" para lectores de pantalla y para el toque.
-- [x] En el celular, mientras la persona escribe en un campo de texto, fecha o teléfono, el botón se esconde y vuelve al salir del campo.
-- [x] Con el chat abierto, el botón dice "Cerrar" completo en cualquier zona.
-- [x] En tablet y computador no cambia nada: se esconde sobre el configurador y la Ruleta, como en la 005.
+- [x] El botón se ve en toda la página, en celular, tablet y computador. Nunca se esconde, tampoco mientras se escribe.
+- [x] En la portada y en la historia se ve completo: "Pedir con Melloco".
+- [x] Sobre el configurador y la Ruleta se reduce a la carita de Melloco (un círculo) para no tapar campos. Para lectores de pantalla sigue llamándose "Pedir con Melloco".
+- [x] Con el chat abierto dice "Cerrar" completo en cualquier zona.
 
 ## Fuera de alcance
 
@@ -23,12 +22,11 @@ Desde la spec 007 el título y "Pedir su pastel" van arriba en la portada y el b
 
 ## Notas técnicas
 
-- Solo cambia el script de `index.html`. El texto del botón pasa a `sr-only` en el modo compacto, y por eso el botón conserva su nombre accesible.
-- Los criterios de comportamiento se verifican con Chrome emulando un celular (CDP). El test revisa que el script tenga las piezas.
+- Solo cambia el script de `index.html`. En el modo compacto el texto pasa a `sr-only`, y así el botón conserva su nombre accesible.
+- En Android, con el teclado abierto, el botón sube junto al teclado (el viewport se achica). Se aceptó a cambio de que esté siempre a mano.
+- Los criterios se verifican con Chrome emulando cada pantalla (CDP). El test revisa que el script no esconda el botón.
 
 ## Resultado
 
-- Verificado en Chrome con emulación de iPhone SE (375 px) y de iPad (1024 px):
-  - iPhone SE: el botón se ve completo en la portada y en la historia (207×52); compacto sobre el configurador y la Ruleta (52×52); oculto mientras se escribe y de vuelta al salir del campo. Con el chat abierto dice "Cerrar".
-  - iPad: sin cambios, oculto sobre el configurador y la Ruleta.
-- 72 tests (1 nuevo: `test_boton_del_chat_visible_en_celular`).
+- Verificado en Chrome emulando iPhone SE (375 px), iPad (768 px) y computador (1280 px). En los tres el botón se ve completo (207×52) en la portada y la historia, compacto (52×52) sobre el configurador y la Ruleta, también mientras se escribe, y dice "Cerrar" con el chat abierto. Nunca se esconde.
+- 72 tests (1 nuevo: `test_boton_del_chat_siempre_visible`).

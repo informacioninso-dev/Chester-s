@@ -214,18 +214,11 @@
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && chatAbierto()) mostrarChat(false); });
       document.body.addEventListener('htmx:afterSettle', (e) => { if (chatPanel.contains(e.target)) chatAlFinal(); });
 
-      // Botón del chat sobre el configurador y la Ruleta (specs 005 y 009):
-      //  - tablet y computador: se esconde para no tapar sus campos;
-      //  - celular: queda visible pero compacto (solo la carita de Melloco) y se esconde mientras se escribe en un campo.
-      const esCelular = window.matchMedia('(max-width: 639px)');
+      // Botón del chat (spec 009): siempre visible. Mientras el configurador o la Ruleta ocupan el centro
+      // de la pantalla queda compacto (solo la carita de Melloco) para no tapar sus campos.
       const zonasConFormulario = new Set();
-      let escribiendo = false;
       function actualizarBotonChat() {
-        const abierto = chatAbierto();
-        const enFormulario = zonasConFormulario.size > 0;
-        const ocultar = !abierto && (esCelular.matches ? escribiendo : enFormulario);
-        const compacto = !abierto && esCelular.matches && enFormulario;
-        ['invisible', 'opacity-0', 'translate-y-4'].forEach((c) => chatBoton.classList.toggle(c, ocultar));
+        const compacto = !chatAbierto() && zonasConFormulario.size > 0;
         chatTexto.classList.toggle('sr-only', compacto);
         chatBoton.classList.toggle('pr-5', !compacto);
         chatBoton.classList.toggle('pr-2.5', compacto);
@@ -235,14 +228,6 @@
         actualizarBotonChat();
       }, { rootMargin: '-35% 0px -35% 0px' });
       ['configurador', 'ruleta'].forEach((id) => { const zona = document.getElementById(id); if (zona) observador.observe(zona); });
-      const CAMPO_DE_TEXTO = 'input:not([type=radio]):not([type=checkbox]):not([type=hidden]), select, textarea';
-      document.addEventListener('focusin', (e) => {
-        if (e.target.matches(CAMPO_DE_TEXTO) && !chatPanel.contains(e.target)) { escribiendo = true; actualizarBotonChat(); }
-      });
-      document.addEventListener('focusout', (e) => {
-        if (e.target.matches(CAMPO_DE_TEXTO)) { escribiendo = false; actualizarBotonChat(); }
-      });
-      esCelular.addEventListener('change', actualizarBotonChat);
 
       // Después de cada paso: si el panel quedó fuera de vista, súbelo; y mueve el foco al título.
       document.body.addEventListener('htmx:afterSwap', (e) => {
