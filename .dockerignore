@@ -1,0 +1,11 @@
+.git
+.venv
+.claude
+__pycache__
+*.pyc
+db.sqlite3
+staticfiles
+.env
+.env.*
+node_modules
+specs

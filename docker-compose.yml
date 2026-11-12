@@ -1,0 +1,33 @@
+# Demo de Chester's en el droplet de Licitar (spec 008).
+# Uso en /opt/chesters: docker compose up -d --build
+# El tráfico llega por el Caddy de Licitar (bloque chesters.binnso.com en su deploy/Caddyfile).
+
+services:
+  web:
+    build: .
+    image: chesters:latest
+    container_name: chesters-web
+    env_file: .env.production
+    environment:
+      DJANGO_DEBUG: "0"
+      DJANGO_BEHIND_PROXY: "1"
+      # Caddy ya redirige http -> https; así Django no repite la redirección.
+      DJANGO_SSL_REDIRECT: "0"
+      DJANGO_DB_PATH: /datos/db.sqlite3
+    volumes:
+      - datos:/datos
+    restart: unless-stopped
+    # 1 GB compartido con Licitar: un worker con hilos y un tope de memoria.
+    mem_limit: 200m
+    networks: [licitar]
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  datos:
+
+networks:
+  licitar:
+    external: true
+    name: licitar_default

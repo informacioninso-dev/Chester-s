@@ -281,6 +281,15 @@ class ConfiguracionProduccionTests(TestCase):
                           DJANGO_ALLOWED_HOSTS="chesters.ec")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
+    def test_base_de_datos_en_la_ruta_de_DJANGO_DB_PATH(self):
+        # Spec 008: en el servidor la base vive en un volumen y sobrevive a cada despliegue.
+        ruta = str(Path("/datos/chesters.sqlite3"))
+        r = correr_django("shell", "-c",
+                          "from django.conf import settings; print(settings.DATABASES['default']['NAME'])",
+                          DJANGO_DB_PATH=ruta)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.stdout.strip().splitlines()[-1], ruta)
+
     def test_admin_en_la_ruta_configurada(self):
         from django.conf import settings
         self.assertEqual(reverse("admin:index"), "/" + settings.ADMIN_URL)

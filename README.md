@@ -82,6 +82,20 @@ npx tailwindcss@3.4.17 -i assets/tailwind.css -o pedidos/static/pedidos/css/ches
 
 Los colores y las fuentes están en `tailwind.config.js`; los estilos propios (animaciones de la ruleta, estados de carga) en `assets/tailwind.css`.
 
+## Demo en el servidor de Licitar (spec 008)
+
+`https://chesters.binnso.com` corre en el droplet de Licitar (`root@167.99.2.102`), en `/opt/chesters`, con su propio contenedor (`chesters-web`) y su base SQLite en el volumen `chesters_datos`. El HTTPS lo da el Caddy de Licitar: el bloque `chesters.binnso.com` está en `deploy/Caddyfile` **del repo de Licitar**.
+
+- **Secretos:** `/opt/chesters/.env.production` en el servidor, nunca en el repo. Lleva `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS` y `CHESTERS_WHATSAPP`.
+- **Publicar lo último** (desde Git Bash, con todo en commit):
+  ```bash
+  git archive --format=tar -o /tmp/chesters.tar HEAD
+  scp /tmp/chesters.tar root@167.99.2.102:/tmp/
+  ssh root@167.99.2.102 'tar -x -f /tmp/chesters.tar -C /opt/chesters && cd /opt/chesters && docker compose up -d --build && docker builder prune -f --keep-storage 1500MB >/dev/null'
+  ```
+- **Crear el administrador:** `ssh -t root@167.99.2.102 'docker exec -it chesters-web python manage.py createsuperuser'`
+- **Ver errores:** `ssh root@167.99.2.102 'docker logs --tail 100 chesters-web'`
+
 ## Antes de producción
 
 - Al desplegar: `pip install -r requirements.txt`, `python manage.py migrate` y `python manage.py collectstatic --noinput`.

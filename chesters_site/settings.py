@@ -126,7 +126,8 @@ WSGI_APPLICATION = 'chesters_site.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        # En el servidor apunta a un volumen de Docker para que la base sobreviva a cada despliegue.
+        'NAME': os.environ.get('DJANGO_DB_PATH') or BASE_DIR / 'db.sqlite3',
     }
 }
 
