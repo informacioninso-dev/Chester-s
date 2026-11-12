@@ -36,7 +36,9 @@
   {% if activo %}
     <div class="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center">
       {% if siguiente %}
-        <form method="post" action="{% url 'pedidos:equipo_accion' p.pk %}" class="sm:flex-1">
+        {# En el celular, la acción principal va en una barra fija abajo, al alcance del pulgar (spec 012). #}
+        <form method="post" action="{% url 'pedidos:equipo_accion' p.pk %}"
+              class="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:flex-1 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
           {% csrf_token %}<input type="hidden" name="tipo" value="estado"><input type="hidden" name="valor" value="{{ siguiente.0 }}">
           <button type="submit" class="min-h-12 w-full rounded-full bg-collar-600 px-6 font-extrabold text-white transition hover:bg-collar-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-collar-600/30">{{ siguiente.1 }}</button>
         </form>
@@ -57,6 +59,10 @@
       <dt class="text-sm text-slate-500">Lo cocina</dt>
       <dd class="mt-1 flex flex-wrap items-center gap-2 font-bold">
         {% if p.cocinero %}{{ p.cocinero.get_full_name|default:p.cocinero.username }}{% else %}<span class="font-normal text-slate-500">Nadie todavía</span>{% endif %}
+        {% if activo and p.cocinero_id == request.user.pk %}
+          <form method="post" action="{% url 'pedidos:equipo_accion' p.pk %}">{% csrf_token %}<input type="hidden" name="tipo" value="soltar_cocina">
+            <button type="submit" class="min-h-11 rounded-full px-4 text-sm font-bold text-slate-600 ring-1 ring-stone-300 transition hover:text-slate-900 hover:ring-slate-900">Soltar</button></form>
+        {% endif %}
         {% if activo and es_cocina and not p.cocinero %}
           <form method="post" action="{% url 'pedidos:equipo_accion' p.pk %}">{% csrf_token %}<input type="hidden" name="tipo" value="tomar_cocina">
             <button type="submit" class="min-h-11 rounded-full bg-slate-900 px-4 text-sm font-extrabold text-white transition hover:bg-slate-700">Lo tomo yo</button></form>
@@ -67,6 +73,10 @@
       <dt class="text-sm text-slate-500">Lo reparte</dt>
       <dd class="mt-1 flex flex-wrap items-center gap-2 font-bold">
         {% if p.repartidor %}{{ p.repartidor.get_full_name|default:p.repartidor.username }}{% else %}<span class="font-normal text-slate-500">Nadie todavía</span>{% endif %}
+        {% if activo and p.repartidor_id == request.user.pk %}
+          <form method="post" action="{% url 'pedidos:equipo_accion' p.pk %}">{% csrf_token %}<input type="hidden" name="tipo" value="soltar_reparto">
+            <button type="submit" class="min-h-11 rounded-full px-4 text-sm font-bold text-slate-600 ring-1 ring-stone-300 transition hover:text-slate-900 hover:ring-slate-900">Soltar</button></form>
+        {% endif %}
         {% if activo and es_reparto and not p.repartidor %}
           <form method="post" action="{% url 'pedidos:equipo_accion' p.pk %}">{% csrf_token %}<input type="hidden" name="tipo" value="tomar_reparto">
             <button type="submit" class="min-h-11 rounded-full bg-slate-900 px-4 text-sm font-extrabold text-white transition hover:bg-slate-700">Lo llevo yo</button></form>
@@ -146,4 +156,5 @@
   </ul>
 </section>
 {% endif %}
+{% if activo and siguiente %}<div class="h-24 sm:hidden" aria-hidden="true"></div>{% endif %}
 {% endblock %}

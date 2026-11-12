@@ -36,6 +36,9 @@ SIGUIENTE = {
     EstadoPedido.EN_PREPARACION: (EstadoPedido.ENTREGADO, "Marcar entregado"),
 }
 
+# Un paso atrás, para "Deshacer" (spec 012). Cancelar no se deshace desde la lista.
+ANTERIOR = {nuevo: anterior for anterior, (nuevo, _) in SIGUIENTE.items()}
+
 VISTAS = [("todo", "Todo"), ("cocina", "Cocina"), ("reparto", "Reparto"),
           ("asignados", "Asignados"), ("historial", "Historial")]
 
@@ -109,6 +112,11 @@ class Ingresar(LoginView):
 
 def _personas(grupo):
     return get_user_model().objects.filter(is_active=True, groups__name=grupo).order_by("first_name", "username")
+
+
+def estado_legible(pedido):
+    """Para el equipo, "En preparación" se llama "En cocina" (spec 011)."""
+    return "En cocina" if pedido.estado == EstadoPedido.EN_PREPARACION else pedido.get_estado_display()
 
 
 def nombre_persona(user):
@@ -246,6 +254,7 @@ def _contexto_vista(request, vista, busqueda):
         "tablero": tablero,
         "falta_asignar": falta_asignar,
         "sin_pedidos": not Cotizacion.objects.exists(),
+        "actualizado": timezone.localtime(),
     }
 
 
@@ -256,6 +265,8 @@ def pedidos(request):
     if vista not in dict(VISTAS):
         vista = "todo"
     contexto = _contexto_vista(request, vista, request.GET.get("q", "").strip())
+    if request.headers.get("HX-Request") == "true":  # refresco automático de la vista (spec 012)
+        return render(request, "pedidos/equipo/vista.html", contexto)
     return render(request, "pedidos/equipo/pedidos.html", contexto)
 
 
@@ -264,7 +275,13 @@ def pedidos(request):
 # ---------------------------------------------------------------------------
 
 def _hacer_accion(request, pedido):
-    """Aplica la acción pedida. Devuelve (ok, mensaje para la persona)."""
+    """Aplica la acción pedida. Devuelve (ok, mensaje, deshacer): deshacer es la acción que la revierte."""
+    ok, mensaje = _aplicar(request, pedido)
+    deshacer = getattr(request, "_deshacer", None) if ok else None
+    return ok, mensaje, deshacer
+
+
+def _aplicar(request, pedido):
     tipo = request.POST.get("tipo")
     grupos = request.grupos
 
@@ -274,11 +291,32 @@ def _hacer_accion(request, pedido):
                     (pedido.estado in SIGUIENTE and SIGUIENTE[pedido.estado][0] == nuevo)
         if not permitido:
             return False, "Ese cambio de estado no es posible."
-        anterior = pedido.get_estado_display()
+        anterior = estado_legible(pedido)
+        if nuevo != EstadoPedido.CANCELADO:
+            request._deshacer = {"tipo": "deshacer", "valor": pedido.estado}
         pedido.estado = nuevo
         pedido.save(update_fields=["estado"])
-        _registrar(request, pedido, f"Estado: {anterior} → {pedido.get_estado_display()}")
-        return True, f"Pedido de {pedido.nombre_perro}: {pedido.get_estado_display().lower()}."
+        _registrar(request, pedido, f"Estado: {anterior} → {estado_legible(pedido)}")
+        return True, f"Pedido de {pedido.nombre_perro}: {estado_legible(pedido).lower()}."
+
+    if tipo == "deshacer":
+        valor = request.POST.get("valor")
+        if ANTERIOR.get(pedido.estado) != valor:
+            return False, "Ya no se puede deshacer ese cambio."
+        anterior = estado_legible(pedido)
+        pedido.estado = valor
+        pedido.save(update_fields=["estado"])
+        _registrar(request, pedido, f"Estado: {anterior} → {estado_legible(pedido)} (deshecho)")
+        return True, f"Listo, {pedido.nombre_perro} volvió a {estado_legible(pedido).lower()}."
+
+    if tipo in ("soltar_cocina", "soltar_reparto"):
+        campo, rol = ("cocinero", "Cocina") if tipo == "soltar_cocina" else ("repartidor", "Reparto")
+        if getattr(pedido, f"{campo}_id") != request.user.pk:
+            return False, "Solo puedes soltar un pedido que tienes tú."
+        setattr(pedido, campo, None)
+        pedido.save(update_fields=[campo])
+        _registrar(request, pedido, f"{rol}: sin asignar ({nombre_persona(request.user)} lo soltó)")
+        return True, f"Soltaste el pedido de {pedido.nombre_perro}."
 
     if tipo in ("tomar_cocina", "tomar_reparto"):
         campo, grupo, rol = ("cocinero", COCINA, "Cocina") if tipo == "tomar_cocina" else ("repartidor", REPARTO, "Reparto")
@@ -286,6 +324,8 @@ def _hacer_accion(request, pedido):
             return False, f"Solo alguien de {rol} puede tomarlo."
         if getattr(pedido, f"{campo}_id") not in (None, request.user.pk):
             return False, f"Ya lo tiene {nombre_persona(getattr(pedido, campo))}."
+        if getattr(pedido, f"{campo}_id") is None:
+            request._deshacer = {"tipo": tipo.replace("tomar", "soltar"), "valor": ""}
         setattr(pedido, campo, request.user)
         pedido.save(update_fields=[campo])
         _registrar(request, pedido, f"{rol}: {nombre_persona(request.user)}")
@@ -328,14 +368,14 @@ def _hacer_accion(request, pedido):
 @equipo_requerido
 def accion(request, pk):
     pedido = get_object_or_404(_pedidos(), pk=pk)
-    ok, mensaje = _hacer_accion(request, pedido)
+    ok, mensaje, deshacer = _hacer_accion(request, pedido)
 
     # Acción rápida desde la lista: se vuelve a pintar la vista entera (el pedido cambia de grupo).
     if request.POST.get("origen") == "lista" and request.headers.get("HX-Request") == "true":
         vista = request.POST.get("ver")
         vista = vista if vista in dict(VISTAS) else "todo"
         contexto = _contexto_vista(request, vista, request.POST.get("q", "").strip())
-        contexto["aviso"] = {"ok": ok, "texto": mensaje}
+        contexto["aviso"] = {"ok": ok, "texto": mensaje, "deshacer": deshacer, "pk": pedido.pk}
         return render(request, "pedidos/equipo/vista.html", contexto)
 
     (messages.success if ok else messages.error)(request, mensaje)

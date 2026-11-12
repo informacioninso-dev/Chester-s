@@ -15,6 +15,12 @@
 @keyframes aparecer { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .htmx-added, .aparecer { animation: aparecer .35s ease-out both; }
 button[disabled] { opacity: .6; cursor: progress; }
+/* Aviso flotante del gestor (spec 012): aparece, se queda unos segundos y se va. Se pausa al pasar el cursor o el foco. */
+@keyframes aviso { 0% { opacity: 0; transform: translateY(.5rem); } 6%, 88% { opacity: 1; transform: none; } 100% { opacity: 0; visibility: hidden; } }
+@keyframes aviso-quieto { 0%, 88% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+.aviso-flotante { animation: aviso 7s ease forwards; }
+.aviso-flotante:hover, .aviso-flotante:focus-within { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .aviso-flotante { animation-name: aviso-quieto; } }
 /* Filas que se deslizan con el dedo sin mostrar la barra (pestañas del gestor en el celular). */
 .sin-barra { scrollbar-width: none; }
 .sin-barra::-webkit-scrollbar { display: none; }

@@ -64,7 +64,7 @@
         <a href="{% url 'pedidos:equipo_pedido' p.pk %}" class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-4 text-sm transition hover:bg-stone-50">
         <span class="font-bold underline-offset-4 hover:underline">{{ p.fecha_cumple|date:"j \d\e F \d\e Y" }}</span>
         <span class="text-slate-600">{{ p.get_receta_display }} · {{ p.get_estilo_display }}</span>
-        <span class="rounded-full bg-stone-100 px-3 py-1 text-xs font-extrabold text-slate-700">{{ p.get_estado_display }}</span>
+        <span class="rounded-full bg-stone-100 px-3 py-1 text-xs font-extrabold text-slate-700">{% if p.estado == 'en_preparacion' %}En cocina{% else %}{{ p.get_estado_display }}{% endif %}</span>
         {% if p.cocinero or p.repartidor %}
           <span class="w-full text-xs text-slate-500">{% if p.cocinero %}Cocina: {{ p.cocinero.get_full_name|default:p.cocinero.username }}{% endif %}{% if p.cocinero and p.repartidor %} · {% endif %}{% if p.repartidor %}Reparto: {{ p.repartidor.get_full_name|default:p.repartidor.username }}{% endif %}</span>
         {% endif %}

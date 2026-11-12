@@ -1,6 +1,6 @@
 {# Una fila por pedido (spec 011): el perrito primero, lo que hay que cuidar y una sola acción. Tocarla abre el detalle. #}
 {% with p=f.p %}
-<li class="flex gap-3 rounded-2xl bg-white p-3 shadow-sm ring-1 sm:p-4 flex-col {% if not en_tablero %}sm:flex-row sm:items-center{% endif %} {% if f.cuando.urgente %}ring-collar-200{% else %}ring-stone-200{% endif %}">
+<li class="flex gap-3 rounded-2xl border-l-[6px] bg-white p-3 shadow-sm ring-1 sm:p-4 {% if p.estado == 'nuevo' %}border-l-collar-600{% elif p.estado == 'confirmado' %}border-l-slate-900{% elif p.estado == 'en_preparacion' %}border-l-crema-300{% else %}border-l-stone-300{% endif %} flex-col {% if not en_tablero %}sm:flex-row sm:items-center{% endif %} {% if f.cuando.urgente %}ring-collar-200{% else %}ring-stone-200{% endif %}">
   <a href="{% url 'pedidos:equipo_pedido' p.pk %}" class="group block min-w-0 flex-1 rounded-xl focus:outline-none focus-visible:ring-4 focus-visible:ring-collar-600/20">
     <span class="flex items-center gap-2">
       <span class="truncate font-display text-lg font-medium group-hover:underline group-hover:underline-offset-4">{{ p.nombre_perro }}</span>

@@ -1112,3 +1112,87 @@ class NotaFamiliaTests(TestCase):
         r = self.client.get(reverse("pedidos:privacidad"))
         self.assertContains(r, "La ficha de tu perrito")
         self.assertContains(r, "se borra junto con tus demás datos")
+
+
+class GestorPulidoTests(TestCase):
+    """Spec 012: aviso flotante con deshacer, soltar, refresco, barra del pulgar y franja por estado."""
+
+    url = reverse("pedidos:equipo")
+
+    def setUp(self):
+        self.yo = persona("ana", "Atención de pedidos")
+        self.chef = persona("chef", "Cocina", first_name="Carla")
+        self.chef2 = persona("chef2", "Cocina", first_name="Pedro")
+        self.client.force_login(self.yo)
+
+    def accion(self, p, tipo, valor="", **extra):
+        return self.client.post(reverse("pedidos:equipo_accion", args=[p.pk]),
+                                {"tipo": tipo, "valor": valor, "origen": "lista", "ver": "todo", **extra}, **HTMX)
+
+    def test_aviso_flotante_con_deshacer(self):
+        p = pedido()
+        r = self.accion(p, "estado", "confirmado")
+        self.assertContains(r, "aviso-flotante")
+        self.assertContains(r, "Deshacer")
+        self.assertContains(r, '<input type="hidden" name="tipo" value="deshacer">', html=False)
+        self.assertContains(r, '<input type="hidden" name="valor" value="nuevo">', html=False)
+        r = self.accion(p, "deshacer", "nuevo")
+        self.assertContains(r, "Listo, Rocky volvió a nuevo.")
+        p.refresh_from_db()
+        self.assertEqual(p.estado, "nuevo")
+        self.assertTrue(LogEntry.objects.filter(object_id=str(p.pk), change_message__contains="deshecho").exists())
+
+    def test_deshacer_solo_retrocede_un_paso(self):
+        p = pedido(estado="en_preparacion")
+        self.accion(p, "deshacer", "nuevo")
+        p.refresh_from_db()
+        self.assertEqual(p.estado, "en_preparacion")
+
+    def test_cancelar_no_se_deshace_desde_la_lista(self):
+        r = self.accion(pedido(), "estado", "cancelado")
+        self.assertContains(r, "aviso-flotante")
+        self.assertNotContains(r, "Deshacer")
+
+    def test_tomar_y_deshacer_lo_suelta(self):
+        p = pedido(estado="confirmado")
+        self.client.force_login(self.chef)
+        r = self.accion(p, "tomar_cocina", ver="cocina")
+        self.assertContains(r, '<input type="hidden" name="tipo" value="soltar_cocina">', html=False)
+        self.accion(p, "soltar_cocina", ver="cocina")
+        p.refresh_from_db()
+        self.assertIsNone(p.cocinero)
+
+    def test_soltar_solo_lo_propio(self):
+        p = pedido(estado="confirmado", cocinero=self.chef)
+        detalle = reverse("pedidos:equipo_pedido", args=[p.pk])
+        self.client.force_login(self.chef2)
+        self.assertNotContains(self.client.get(detalle), ">Soltar</button>", html=False)
+        self.accion(p, "soltar_cocina")
+        p.refresh_from_db()
+        self.assertEqual(p.cocinero, self.chef)
+        self.client.force_login(self.chef)
+        self.assertContains(self.client.get(detalle), ">Soltar</button>", html=False)
+
+    def test_la_vista_se_refresca_sola(self):
+        r = self.client.get(self.url, {"ver": "todo"})
+        self.assertContains(r, "every 60s")
+        self.assertContains(r, "Se actualiza solo")
+        parcial = self.client.get(self.url, {"ver": "todo"}, **HTMX)
+        self.assertContains(parcial, 'id="vista"')
+        self.assertNotContains(parcial, "<html")
+
+    def test_barra_del_pulgar_en_el_detalle(self):
+        p = pedido()
+        html = self.client.get(reverse("pedidos:equipo_pedido", args=[p.pk])).content.decode()
+        self.assertIn("fixed inset-x-0 bottom-0", html)
+        self.assertIn("Confirmar pedido", html)
+
+    def test_franja_de_color_por_estado(self):
+        pedido("Nuevito")
+        pedido("Cocinando", estado="en_preparacion")
+        html = self.client.get(self.url).content.decode()
+        self.assertIn("border-l-collar-600", html)
+        self.assertIn("border-l-crema-300", html)
+
+    def test_pantalla_vacia_con_melloco(self):
+        self.assertContains(self.client.get(self.url), "pedidos/img/melloco.svg")

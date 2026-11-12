@@ -1,11 +1,32 @@
-{# Vista del día (spec 011). Las acciones rápidas la vuelven a pintar entera con HTMX. #}
-<div id="vista">
+{% load static %}{# Vista del día (specs 011 y 012). Las acciones rápidas la vuelven a pintar entera con HTMX, y se refresca sola cada minuto. #}
+<div id="vista"
+     hx-get="{% url 'pedidos:equipo' %}?ver={{ vista }}{% if busqueda %}&amp;q={{ busqueda|urlencode }}{% endif %}"
+     hx-trigger="every 60s [document.visibilityState === 'visible' && !document.activeElement.matches('input, select, textarea')]"
+     hx-swap="outerHTML">
   {% if aviso %}
-    <p role="status" class="mb-4 rounded-2xl px-4 py-3 text-sm font-semibold {% if aviso.ok %}bg-white text-slate-800 ring-1 ring-stone-200{% else %}bg-collar-50 text-collar-800 ring-1 ring-collar-200{% endif %}">{{ aviso.texto }}</p>
+    {# Aviso flotante (spec 012): abajo, a la vista, con "Deshacer" cuando se puede. Se oculta solo. #}
+    <div role="status" class="aviso-flotante fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center gap-3 rounded-2xl py-2 pl-4 pr-2 text-sm font-semibold text-white shadow-2xl shadow-slate-900/30 {% if aviso.ok %}bg-slate-900{% else %}bg-collar-700{% endif %}">
+      <span class="min-w-0 flex-1 py-2">{{ aviso.texto }}</span>
+      {% if aviso.deshacer %}
+        <form method="post" action="{% url 'pedidos:equipo_accion' aviso.pk %}"
+              hx-post="{% url 'pedidos:equipo_accion' aviso.pk %}" hx-target="#vista" hx-swap="outerHTML">
+          {% csrf_token %}
+          <input type="hidden" name="tipo" value="{{ aviso.deshacer.tipo }}">
+          <input type="hidden" name="valor" value="{{ aviso.deshacer.valor }}">
+          <input type="hidden" name="origen" value="lista">
+          <input type="hidden" name="ver" value="{{ vista }}">
+          <input type="hidden" name="q" value="{{ busqueda }}">
+          <button type="submit" class="min-h-11 rounded-xl px-4 font-extrabold text-crema-200 transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60">Deshacer</button>
+        </form>
+      {% endif %}
+    </div>
   {% endif %}
 
   <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-    <h1 class="font-display text-3xl font-medium tracking-tight">Hoy, {{ hoy|date:"l j \d\e F" }}</h1>
+    <div>
+      <h1 class="font-display text-3xl font-medium tracking-tight">Hoy, {{ hoy|date:"l j \d\e F" }}</h1>
+      <p class="mt-1 text-xs text-slate-500">Se actualiza solo · {{ actualizado|time:"H:i" }}</p>
+    </div>
     <p class="flex flex-wrap gap-2 text-sm font-bold">
       {% if para_hoy or atrasados %}
         {% if atrasados %}<span class="rounded-full bg-collar-600 px-3 py-1 text-white">{{ atrasados }} atrasado{{ atrasados|pluralize }}</span>{% endif %}
@@ -53,6 +74,7 @@
   {% if not filas %}
     {# Pantalla vacía que orienta. #}
     <div class="mt-6 rounded-3xl border border-dashed border-stone-300 bg-white/60 px-6 py-10 text-center">
+      <img src="{% static 'pedidos/img/melloco.svg' %}" alt="" width="64" height="64" class="mx-auto mb-4 h-16 w-16 rounded-full bg-crema-50 ring-4 ring-white">
       <p class="font-display text-xl font-medium">
         {% if busqueda %}No encontramos pedidos con esa búsqueda.
         {% elif vista == "cocina" %}Nada por cocinar.

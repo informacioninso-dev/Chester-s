@@ -47,6 +47,8 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 
 - 2026-11-12 · El gestor se organiza **por día y por rol** (spec 011), no por estado: al dueño la primera versión, en tarjetas grandes con pestañas por estado, le pareció mala para el equipo. Una sola acción rápida por fila; el resto, en el detalle. La dirección y la hora de entrega las anota el equipo, no el cliente.
 
+- 2026-11-12 · En el gestor, "En preparación" se muestra como **"En cocina"**: así lo dice el equipo. El modelo conserva el valor `en_preparacion`.
+
 ## Pendientes conocidos
 
 - Revisar con un abogado el texto de `/privacidad/` (spec 001) y agregar razón social/RUC del responsable.
