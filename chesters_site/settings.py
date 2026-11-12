@@ -80,12 +80,16 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    # Antes de staticfiles: runserver deja los estáticos a WhiteNoise, igual que en producción.
+    'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
     'pedidos',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Sirve los estáticos comprimidos y con caché larga (spec 003).
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -161,6 +165,17 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# En producción los nombres llevan un hash (chesters.4f1a….css) y WhiteNoise los
+# sirve comprimidos con caché de 1 año. Requiere `manage.py collectstatic` al desplegar.
+# En desarrollo y en los tests se usa el almacenamiento normal (no hace falta collectstatic).
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {
+        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'
+        if DEBUG else 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

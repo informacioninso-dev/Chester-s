@@ -1,0 +1,21 @@
+/* Entrada de Tailwind (ver tailwind.config.js). No editar el CSS compilado a mano. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes girar { to { transform: rotate(360deg); } }
+/* La ruleta está quieta: gira al pasar el cursor y, rápido, mientras se envía el formulario. */
+.ruleta { animation: girar 6s linear infinite; animation-play-state: paused; }
+.ruleta:hover { animation-play-state: running; }
+.ruleta.htmx-request { animation-duration: .7s; animation-play-state: running; }
+/* Texto alternativo de los botones mientras HTMX envía el formulario. */
+.al-enviar { display: none; }
+.htmx-request .al-enviar { display: inline; }
+.htmx-request .en-reposo { display: none; }
+@keyframes aparecer { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.htmx-added, .aparecer { animation: aparecer .35s ease-out both; }
+button[disabled] { opacity: .6; cursor: progress; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .ruleta, .ruleta.htmx-request, .htmx-added, .aparecer { animation: none; }
+}

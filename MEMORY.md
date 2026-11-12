@@ -9,7 +9,8 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 
 ## Decisiones
 
-- 2026-11-11 · Sin build de frontend: Tailwind por CDN y HTMX — se mantiene simple hasta salir a producción (ver README).
+- 2026-11-11 · Tailwind compilado en local y **el CSS resultante se versiona** (spec 003): el servidor no necesita Node. Reemplaza la decisión anterior de usar el CDN. Hay que regenerarlo al tocar clases (ver README) — si no, la clase nueva no tendrá estilo.
+- 2026-11-11 · WhiteNoise sirve los estáticos con hash y caché de 1 año solo con `DJANGO_DEBUG=0`; en desarrollo y tests se usa el almacenamiento normal para no exigir `collectstatic`.
 - 2026-11-11 · El pedido termina en WhatsApp de Melloco, no hay pago en línea — Melloco cierra la venta a mano.
 - 2026-11-11 · El regalo de la Ruleta se envía `CHESTERS_DIAS_REGALO` (15) días antes del próximo cumpleaños; el 29/02 se trata como 28/02.
 - 2026-11-11 · Binn se integra en dos modos (webhook push + API pull) para que la API sirva de reintento si falla el webhook.
@@ -26,7 +27,6 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 
 ## Pendientes conocidos
 
-- Compilar Tailwind en lugar del CDN.
 - Revisar con un abogado el texto de `/privacidad/` (spec 001) y agregar razón social/RUC del responsable.
 - Mover el webhook a una cola (Celery/RQ) si sube el volumen.
 - Content-Security-Policy: después de compilar Tailwind (spec 003) y sacar los `hx-on` en línea.

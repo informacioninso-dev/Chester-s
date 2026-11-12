@@ -50,7 +50,7 @@ class PrivacidadTests(TestCase):
                         "Con qué base legal", "Con quién los compartimos", "Cuánto tiempo", "Tus derechos"):
             self.assertContains(r, seccion)
         self.assertContains(r, "Binn")
-        self.assertContains(r, "cdn.tailwindcss.com")  # mismo <head> que la landing
+        self.assertContains(r, "pedidos/css/chesters.css")  # mismo <head> que la landing
 
     def test_footer_y_ruleta_enlazan_la_politica(self):
         r = self.client.get(reverse("pedidos:index"))
@@ -351,3 +351,31 @@ class ApiLimiteTests(TestCase):
             r = self.client.get(reverse("pedidos:api_leads") + f"?limite={valor}", HTTP_X_BINN_TOKEN="secreto")
             self.assertEqual(r.status_code, 200, valor)
             self.assertEqual(len(r.json()["resultados"]), 1, valor)
+
+
+# ---------------------------------------------------------------------------
+# Spec 003 · Rendimiento
+# ---------------------------------------------------------------------------
+
+class RendimientoTests(TestCase):
+    def test_usa_css_compilado_y_no_el_cdn_de_tailwind(self):
+        r = self.client.get(reverse("pedidos:index"))
+        self.assertNotContains(r, "cdn.tailwindcss.com")
+        self.assertContains(r, 'href="/static/pedidos/css/chesters.css"')
+        self.assertTrue((RAIZ / "pedidos/static/pedidos/css/chesters.css").stat().st_size > 1000)
+
+    def test_imagenes_en_webp_con_respaldo_jpg(self):
+        r = self.client.get(reverse("pedidos:index"))
+        for archivo in ("logo-640.webp", "logo.webp", "chester-avatar-96.webp", "chester-avatar.webp"):
+            self.assertContains(r, f"/static/pedidos/img/{archivo}")
+            self.assertTrue((RAIZ / "pedidos/static/pedidos/img" / archivo).exists(), archivo)
+        self.assertContains(r, 'type="image/webp"', count=3)
+        self.assertContains(r, "/static/pedidos/img/logo.jpg")
+
+    def test_produccion_usa_estaticos_con_hash_y_whitenoise(self):
+        r = correr_django("shell", "-c",
+                          "from django.conf import settings as s; print(s.STORAGES['staticfiles']['BACKEND']); "
+                          "print('whitenoise.middleware.WhiteNoiseMiddleware' in s.MIDDLEWARE)",
+                          DJANGO_DEBUG="0", DJANGO_SECRET_KEY="x" * 50)
+        self.assertIn("whitenoise.storage.CompressedManifestStaticFilesStorage", r.stdout, r.stderr)
+        self.assertIn("True", r.stdout)

@@ -65,8 +65,18 @@ pedidos/
 specs/           specs del flujo spec driven (ver AGENTS.md)
 ```
 
+## Estilos (Tailwind)
+
+El CSS ya compilado está en `pedidos/static/pedidos/css/chesters.css` y se versiona, así que para desplegar no hace falta Node. Si cambias clases en las plantillas o en `forms.py`, regenéralo:
+
+```bash
+npx tailwindcss@3.4.17 -i assets/tailwind.css -o pedidos/static/pedidos/css/chesters.css --minify
+```
+
+Los colores y las fuentes están en `tailwind.config.js`; los estilos propios (animaciones de la ruleta, estados de carga) en `assets/tailwind.css`.
+
 ## Antes de producción
 
-- Tailwind se carga desde el CDN de prueba: compilarlo con `django-tailwind` o el CLI standalone.
+- Al desplegar: `pip install -r requirements.txt`, `python manage.py migrate` y `python manage.py collectstatic --noinput`.
 - Revisar con un abogado el texto de la política de privacidad (`/privacidad/`) y agregar razón social/RUC.
 - Para muchos envíos al webhook, mover `crm.py` a una cola (Celery/RQ) en lugar de hilos.
