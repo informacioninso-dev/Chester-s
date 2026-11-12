@@ -19,7 +19,7 @@ class CotizacionAdmin(WhatsAppClienteMixin, admin.ModelAdmin):
                     "telefono", "escribir_whatsapp", "sincronizado_crm", "creado_en")
     list_display_links = ("nombre_perro",)
     list_editable = ("estado",)
-    list_filter = ("estado", "receta", "estilo", "cocinero", "repartidor", "sincronizado_crm", "fecha_cumple")
+    list_filter = ("estado", "cobrado", "receta", "estilo", "cocinero", "repartidor", "sincronizado_crm", "fecha_cumple")
     search_fields = ("nombre_perro", "nombre_cliente", "telefono")
     date_hierarchy = "fecha_cumple"
     readonly_fields = ("creado_en", "consentimiento_en", "sincronizado_crm", "sincronizado_en")

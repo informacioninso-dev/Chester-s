@@ -53,6 +53,8 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 
 - 2026-11-12 · El equipo de Chester’s no es muy tecnológico: los usuarios se crean desde la pestaña **Equipo** del gestor (spec 014), con contraseñas de palabras fáciles de dictar que se muestran una sola vez. A las personas nuevas no se les marca staff. Lo administra solo el superusuario.
 
+- 2026-11-12 · **Cobrado va aparte del estado** (spec 015): a veces pagan un anticipo antes de entregar. Un pedido entregado y sin cobrar no se va al Historial; queda en "Por cobrar".
+
 ## Pendientes conocidos
 
 - Revisar con un abogado el texto de `/privacidad/` (spec 001) y agregar razón social/RUC del responsable.

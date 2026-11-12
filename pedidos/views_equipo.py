@@ -6,6 +6,7 @@ detalle de cada pedido con su entrega, y las fichas de los perritos con sus gust
 
 import datetime
 import secrets
+from decimal import Decimal, InvalidOperation
 from functools import wraps
 
 from django import forms
@@ -26,7 +27,7 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from .forms import INPUT
-from .models import Cotizacion, EstadoPedido, Forma, LeadCumple, Perrito, Receta
+from .models import Cotizacion, EstadoPedido, Forma, FormaPago, LeadCumple, Perrito, Receta
 
 ATENCION, COCINA, REPARTO = "Atención de pedidos", "Cocina", "Reparto"
 GRUPOS_EQUIPO = (ATENCION, COCINA, REPARTO)
@@ -43,16 +44,20 @@ SIGUIENTE = {
 # Un paso atrás, para "Deshacer" (spec 012). Cancelar no se deshace desde la lista.
 ANTERIOR = {nuevo: anterior for anterior, (nuevo, _) in SIGUIENTE.items()}
 
-VISTAS = [("todo", "Todo"), ("cocina", "Cocina"), ("reparto", "Reparto"),
+VISTAS = [("todo", "Todo"), ("cocina", "Cocina"), ("reparto", "Reparto"), ("cobrar", "Por cobrar"),
           ("asignados", "Asignados"), ("historial", "Historial")]
+
+# Spec 015: entregado y sin cobrar sigue a la vista hasta que se cobra.
+POR_COBRAR = Q(estado=EstadoPedido.ENTREGADO, cobrado=False)
 
 COLUMNAS_TABLERO = [
     (EstadoPedido.NUEVO, "Nuevos"),
     (EstadoPedido.CONFIRMADO, "Confirmados"),
     (EstadoPedido.EN_PREPARACION, "En cocina"),
+    (EstadoPedido.ENTREGADO, "Por cobrar"),
 ]
 
-GRUPOS_DIA = ["Atrasados", "Hoy", "Mañana", "Esta semana", "Más adelante"]
+GRUPOS_DIA = ["Atrasados", "Hoy", "Mañana", "Esta semana", "Más adelante", "Por cobrar"]
 
 
 # ---------------------------------------------------------------------------
@@ -150,7 +155,7 @@ def _cuando(pedido, hoy):
         return {"texto": "Mañana", "urgente": pedido.estado in ACTIVOS}
     if dias > 1:
         return {"texto": f"En {dias} días", "urgente": False}
-    return {"texto": f"Hace {-dias} días", "urgente": False}
+    return {"texto": f"Hace {-dias} día{'' if dias == -1 else 's'}", "urgente": False}
 
 
 def _grupo_dia(fecha, hoy):
@@ -171,7 +176,7 @@ def _registrar(request, obj, mensaje):
 
 
 def _pedidos():
-    return Cotizacion.objects.select_related("perrito", "cocinero", "repartidor", "receta", "estilo")
+    return Cotizacion.objects.select_related("perrito", "cocinero", "repartidor", "receta", "estilo", "cobrado_por")
 
 
 def _filtro_vista(vista, user):
@@ -182,13 +187,17 @@ def _filtro_vista(vista, user):
         return Q(estado=EstadoPedido.EN_PREPARACION) & (Q(repartidor=user) | Q(repartidor__isnull=True))
     if vista == "asignados":
         return Q(estado__in=ACTIVOS) & (Q(cocinero__isnull=False) | Q(repartidor__isnull=False))
+    if vista == "cobrar":
+        return POR_COBRAR
     if vista == "historial":
         return Q(estado__in=[EstadoPedido.ENTREGADO, EstadoPedido.CANCELADO])
-    return Q(estado__in=ACTIVOS)
+    return Q(estado__in=ACTIVOS) | POR_COBRAR
 
 
 def _accion_rapida(pedido, vista, grupos):
     """La única acción que se ofrece en la fila, según la vista: (tipo, valor, texto)."""
+    if pedido.estado == EstadoPedido.ENTREGADO and not pedido.cobrado:
+        return ("cobrar", "", "Marcar cobrado")
     if vista == "cocina":
         if pedido.cocinero_id is None and COCINA in grupos:
             return ("tomar_cocina", "", "Lo tomo yo")
@@ -242,7 +251,8 @@ def _contexto_vista(request, vista, busqueda):
     elif vista != "historial":
         por_dia = {g: [] for g in GRUPOS_DIA}
         for f in filas:
-            por_dia[_grupo_dia(f["p"].fecha_cumple, hoy)].append(f)
+            grupo = "Por cobrar" if f["p"].estado == EstadoPedido.ENTREGADO else _grupo_dia(f["p"].fecha_cumple, hoy)
+            por_dia[grupo].append(f)
         grupos_vista = [{"nombre": g, "filas": por_dia[g]} for g in GRUPOS_DIA if por_dia[g]]
 
     tablero = []
@@ -265,6 +275,7 @@ def _contexto_vista(request, vista, busqueda):
         "hoy": hoy,
         "para_hoy": activos.filter(fecha_cumple=hoy).count(),
         "atrasados": activos.filter(fecha_cumple__lt=hoy).count(),
+        "por_cobrar": base.filter(POR_COBRAR).count(),
         "filas": filas,
         "grupos_vista": grupos_vista,
         "tablero": tablero,
@@ -377,6 +388,40 @@ def _aplicar(request, pedido):
         _registrar(request, pedido, "Entrega actualizada")
         return True, "Entrega guardada."
 
+    if tipo == "cobrar":
+        if pedido.estado == EstadoPedido.CANCELADO:
+            return False, "Un pedido cancelado no se cobra."
+        if pedido.cobrado:
+            return False, "Ese pedido ya estaba cobrado."
+        monto = None
+        monto_texto = request.POST.get("monto_cobrado", "").strip().replace("$", "").replace(" ", "").replace(",", ".")
+        if monto_texto:
+            try:
+                monto = Decimal(monto_texto).quantize(Decimal("0.01"))
+            except InvalidOperation:
+                monto = None
+            if monto is None or not (0 <= monto < 1000000):
+                return False, "El monto no es válido. Escríbelo así: 25,50"
+        forma = request.POST.get("forma_pago", "")
+        forma = forma if forma in FormaPago.values else ""
+        pedido.cobrado, pedido.cobrado_en, pedido.cobrado_por = True, timezone.now(), request.user
+        pedido.monto_cobrado, pedido.forma_pago = monto, forma
+        pedido.save(update_fields=["cobrado", "cobrado_en", "cobrado_por", "monto_cobrado", "forma_pago"])
+        detalle = " · ".join(x for x in (f"${monto}" if monto is not None else "",
+                                         pedido.get_forma_pago_display() if forma else "") if x)
+        _registrar(request, pedido, "Cobrado" + (f" ({detalle})" if detalle else ""))
+        request._deshacer = {"tipo": "descobrar", "valor": ""}
+        return True, f"Pedido de {pedido.nombre_perro}: cobrado."
+
+    if tipo == "descobrar":
+        if not pedido.cobrado:
+            return False, "Ese pedido no estaba cobrado."
+        pedido.cobrado, pedido.cobrado_en, pedido.cobrado_por = False, None, None
+        pedido.monto_cobrado, pedido.forma_pago = None, ""
+        pedido.save(update_fields=["cobrado", "cobrado_en", "cobrado_por", "monto_cobrado", "forma_pago"])
+        _registrar(request, pedido, "Cobro deshecho")
+        return True, f"Listo, el pedido de {pedido.nombre_perro} vuelve a estar por cobrar."
+
     return False, "Acción desconocida."
 
 
@@ -419,6 +464,7 @@ def pedido(request, pk):
         "reparto": _personas(REPARTO),
         "cambios": cambios,
         # Spec 013: la receta declara alérgenos y el perrito tiene alergias o una nota de la familia.
+        "formas_pago": FormaPago.choices,
         "revisar_alergias": bool(p.receta.contiene and ((p.perrito and p.perrito.no_le_gusta) or p.nota_familia)),
     })
 

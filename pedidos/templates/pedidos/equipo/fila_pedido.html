@@ -10,8 +10,9 @@
     <span class="mt-0.5 block truncate text-sm text-slate-600">
       <span class="{% if f.cuando.urgente %}font-bold text-collar-700{% endif %}">{% if en_tablero or vista == 'historial' or vista == 'asignados' %}{{ f.cuando.texto }} · {% endif %}{{ p.fecha_cumple|date:"D j \d\e M" }}</span>{% if p.hora_entrega %} · <strong class="text-slate-900">{{ p.hora_entrega|time:"H:i" }}</strong>{% endif %} · {{ p.receta.nombre }} · {{ p.estilo.nombre }}
     </span>
-    {% if p.perrito.no_le_gusta or p.nota_familia or p.cocinero or p.repartidor %}
+    {% if p.perrito.no_le_gusta or p.nota_familia or p.cocinero or p.repartidor or p.cobrado or p.estado == 'entregado' %}
       <span class="mt-2 flex flex-wrap gap-1.5 text-xs font-bold">
+        {% if p.cobrado %}<span class="rounded-full bg-slate-900 px-2.5 py-1 text-white">Cobrado{% if p.monto_cobrado is not None %} ${{ p.monto_cobrado|floatformat:2 }}{% endif %}</span>{% elif p.estado == 'entregado' %}<span class="rounded-full bg-collar-600 px-2.5 py-1 text-white">Por cobrar</span>{% endif %}
         {% if p.perrito.no_le_gusta %}<span class="max-w-full truncate rounded-full bg-collar-50 px-2.5 py-1 text-collar-800 ring-1 ring-collar-200">Alergias: {{ p.perrito.no_le_gusta|truncatechars:48 }}</span>{% endif %}
         {% if p.nota_familia %}<span class="max-w-full truncate rounded-full bg-crema-50 px-2.5 py-1 text-slate-800 ring-1 ring-crema-200">Familia: {{ p.nota_familia|truncatechars:40 }}</span>{% endif %}
         {% if p.cocinero %}<span class="rounded-full bg-stone-100 px-2.5 py-1 text-slate-700">Cocina: {{ p.cocinero.get_full_name|default:p.cocinero.username }}</span>{% endif %}

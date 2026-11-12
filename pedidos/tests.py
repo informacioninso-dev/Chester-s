@@ -856,8 +856,8 @@ class GestorVistaDelDiaTests(TestCase):
     def test_en_computador_todo_es_un_tablero(self):
         pedido()
         html = self.client.get(self.url).content.decode()
-        self.assertIn("lg:grid-cols-3", html)
-        for columna in ("Nuevos", "Confirmados", "En cocina"):
+        self.assertIn("lg:grid-cols-4", html)
+        for columna in ("Nuevos", "Confirmados", "En cocina", "Por cobrar"):
             self.assertIn(columna, html)
 
     def test_cada_rol_entra_a_su_vista(self):
@@ -1394,3 +1394,86 @@ class EquipoPersonasTests(TestCase):
         self.assertGreater(len(claves), 45)
         for c in claves:
             self.assertRegex(c, r"^[a-zñ]+-[a-zñ]+-[a-zñ]+-\d{3}$")
+
+
+class CobroTests(TestCase):
+    """Spec 015: entregado sigue a la vista hasta que se cobra; el cobro va aparte del estado."""
+
+    url = reverse("pedidos:equipo")
+
+    def setUp(self):
+        self.ana = persona("ana", "Atención de pedidos", first_name="Ana")
+        self.client.force_login(self.ana)
+
+    def accion(self, p, tipo, **extra):
+        return self.client.post(reverse("pedidos:equipo_accion", args=[p.pk]),
+                                {"tipo": tipo, "origen": "lista", "ver": "todo", **extra}, **HTMX)
+
+    def test_entregado_sin_cobrar_sigue_a_la_vista(self):
+        pedido("Entregadito", dias=-1, estado="entregado")
+        pedido("Pagadito", dias=-1, estado="entregado", cobrado=True)
+        html = self.client.get(self.url).content.decode()
+        self.assertIn("Por cobrar · 1", html)
+        self.assertIn(">Entregadito<", html)
+        self.assertNotIn(">Pagadito<", html)
+        self.assertIn("1 por cobrar", html)
+        self.assertIn("Marcar cobrado", html)
+        self.assertRegex(html, r'aria-current="page"[^>]*>\s*Todo')
+        r = self.client.get(self.url, {"ver": "cobrar"})
+        self.assertContains(r, ">Entregadito<")
+        self.assertNotContains(r, ">Pagadito<")
+
+    def test_marcar_cobrado_desde_la_lista_y_deshacer(self):
+        p = pedido(dias=-1, estado="entregado")
+        r = self.accion(p, "cobrar")
+        self.assertContains(r, "Pedido de Rocky: cobrado.")
+        self.assertContains(r, '<input type="hidden" name="tipo" value="descobrar">', html=False)
+        p.refresh_from_db()
+        self.assertTrue(p.cobrado)
+        self.assertEqual(p.cobrado_por, self.ana)
+        self.assertIsNotNone(p.cobrado_en)
+        self.accion(p, "descobrar")
+        p.refresh_from_db()
+        self.assertFalse(p.cobrado)
+
+    def test_cobro_con_monto_y_forma_en_el_detalle(self):
+        p = pedido(estado="confirmado")  # anticipo: se cobra antes de entregar
+        detalle = reverse("pedidos:equipo_pedido", args=[p.pk])
+        self.assertContains(self.client.get(detalle), "Si ya pagaron")
+        r = self.client.post(reverse("pedidos:equipo_accion", args=[p.pk]),
+                             {"tipo": "cobrar", "monto_cobrado": "$ 25,50", "forma_pago": "transferencia"}, follow=True)
+        self.assertContains(r, "Cobrado</strong> el")
+        self.assertContains(r, "25,50")
+        self.assertContains(r, "Transferencia")
+        self.assertContains(r, "Lo marcó Ana.")
+        p.refresh_from_db()
+        self.assertEqual((str(p.monto_cobrado), p.forma_pago), ("25.50", "transferencia"))
+        self.assertIn("Cobrado ($25.50 · Transferencia)", LogEntry.objects.filter(object_id=str(p.pk)).first().get_change_message())
+        self.assertEqual(p.to_crm()["monto_cobrado"], "25.50")
+
+    def test_monto_invalido_y_cancelado(self):
+        p = pedido(estado="entregado")
+        r = self.client.post(reverse("pedidos:equipo_accion", args=[p.pk]),
+                             {"tipo": "cobrar", "monto_cobrado": "veinte"}, follow=True)
+        self.assertContains(r, "El monto no es válido.")
+        cancelado = pedido("Nop", estado="cancelado")
+        self.client.post(reverse("pedidos:equipo_accion", args=[cancelado.pk]), {"tipo": "cobrar"})
+        cancelado.refresh_from_db()
+        self.assertFalse(cancelado.cobrado)
+
+    def test_historial_dice_si_se_cobro(self):
+        pedido("Pagado", dias=-3, estado="entregado", cobrado=True)
+        pedido("Debe", dias=-3, estado="entregado")
+        html = self.client.get(self.url, {"ver": "historial"}).content.decode()
+        self.assertIn(">Cobrado</span>", html)
+        self.assertIn(">Por cobrar</span>", html)
+
+    def test_ayuda_de_la_fecha(self):
+        from .views_equipo import _cuando
+        hoy = timezone.localdate()
+        for dias, texto in {0: "Hoy", 1: "Mañana", 3: "En 3 días", -2: "Atrasado"}.items():
+            p = Cotizacion(fecha_cumple=hoy + datetime.timedelta(days=dias), estado="confirmado")
+            self.assertEqual(_cuando(p, hoy)["texto"], texto)
+        for dias, texto in {-1: "Hace 1 día", -2: "Hace 2 días"}.items():
+            p = Cotizacion(fecha_cumple=hoy + datetime.timedelta(days=dias), estado="entregado")
+            self.assertEqual(_cuando(p, hoy)["texto"], texto)

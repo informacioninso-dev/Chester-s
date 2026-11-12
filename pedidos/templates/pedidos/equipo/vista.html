@@ -28,9 +28,10 @@
       <p class="mt-1 text-xs text-slate-500">Se actualiza solo · {{ actualizado|time:"H:i" }}</p>
     </div>
     <p class="flex flex-wrap gap-2 text-sm font-bold">
-      {% if para_hoy or atrasados %}
+      {% if para_hoy or atrasados or por_cobrar %}
         {% if atrasados %}<span class="rounded-full bg-collar-600 px-3 py-1 text-white">{{ atrasados }} atrasado{{ atrasados|pluralize }}</span>{% endif %}
         {% if para_hoy %}<span class="rounded-full bg-slate-900 px-3 py-1 text-white">{{ para_hoy }} para hoy</span>{% endif %}
+        {% if por_cobrar %}<span class="rounded-full bg-crema-200 px-3 py-1 text-slate-900">{{ por_cobrar }} por cobrar</span>{% endif %}
       {% else %}
         <span class="rounded-full bg-white px-3 py-1 text-slate-600 ring-1 ring-stone-200">Nada urgente por hoy</span>
       {% endif %}
@@ -79,6 +80,7 @@
         {% if busqueda %}No encontramos pedidos con esa búsqueda.
         {% elif vista == "cocina" %}Nada por cocinar.
         {% elif vista == "reparto" %}Nada por repartir.
+        {% elif vista == "cobrar" %}Todo está cobrado.
         {% elif vista == "asignados" %}Nadie tiene pedidos asignados.
         {% elif vista == "historial" %}Aún no hay pedidos entregados ni cancelados.
         {% else %}No hay pedidos activos.{% endif %}
@@ -116,7 +118,7 @@
     </div>
 
     {% if vista == "todo" %}
-      <div class="mt-6 hidden gap-4 lg:grid lg:grid-cols-3">
+      <div class="mt-6 hidden gap-3 lg:grid lg:grid-cols-4">
         {% for col in tablero %}
           <section aria-labelledby="columna-{{ forloop.counter }}" class="rounded-3xl bg-stone-200/50 p-3">
             <h2 id="columna-{{ forloop.counter }}" class="flex items-center justify-between px-2 pb-3 pt-1 text-sm font-extrabold">

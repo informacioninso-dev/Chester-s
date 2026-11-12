@@ -81,6 +81,12 @@ class Forma(DelRecetario):
         return _lineas(self.como_armarla)
 
 
+class FormaPago(models.TextChoices):
+    EFECTIVO = "efectivo", "Efectivo"
+    TRANSFERENCIA = "transferencia", "Transferencia"
+    OTRO = "otro", "Otro"
+
+
 class EstadoPedido(models.TextChoices):
     NUEVO = "nuevo", "Nuevo"
     CONFIRMADO = "confirmado", "Confirmado"
@@ -223,6 +229,13 @@ class Cotizacion(ConWhatsAppCliente, ConFichaDePerrito, SincronizableCRM):
     # Spec 011: la entrega la coordina el equipo por WhatsApp y la anota en el gestor.
     direccion_entrega = models.TextField("dirección de entrega", blank=True, max_length=300)
     hora_entrega = models.TimeField("hora de entrega", null=True, blank=True)
+    # Spec 015: el cobro va aparte del estado (puede haber un anticipo antes de entregar).
+    cobrado = models.BooleanField("cobrado", default=False, db_index=True)
+    cobrado_en = models.DateTimeField("cobrado el", null=True, blank=True)
+    cobrado_por = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                                    related_name="pedidos_cobrados", verbose_name="lo cobró")
+    monto_cobrado = models.DecimalField("monto cobrado", max_digits=8, decimal_places=2, null=True, blank=True)
+    forma_pago = models.CharField("forma de pago", max_length=15, choices=FormaPago.choices, blank=True)
 
     class Meta:
         ordering = ["-creado_en"]
@@ -250,6 +263,9 @@ class Cotizacion(ConWhatsAppCliente, ConFichaDePerrito, SincronizableCRM):
             "estado": self.estado,
             "estado_nombre": self.get_estado_display(),
             "nota_familia": self.nota_familia,
+            "cobrado": self.cobrado,
+            "monto_cobrado": str(self.monto_cobrado) if self.monto_cobrado is not None else None,
+            "forma_pago": self.forma_pago,
             "creado_en": self.creado_en.isoformat(),
         }
 
