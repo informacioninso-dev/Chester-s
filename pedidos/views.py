@@ -299,8 +299,6 @@ def confirmar_pedido(request):
         "pedidos/partials/pedido_confirmado.html",
         {"cotizacion": cotizacion, "wa_url": wa_url},
     )
-    # Tras pintar el mensaje de éxito, el JS de la página abre WhatsApp.
-    respuesta["HX-Trigger-After-Settle"] = json.dumps({"abrirWhatsapp": {"url": wa_url}})
     return respuesta
 
 
@@ -476,12 +474,10 @@ def chat(request):
                       _contexto_chat("acepta_datos", datos, mensajes, preguntar=False), status=429)
 
     wa_url = url_whatsapp(cotizacion)
-    mensajes.append({"de": "melloco", "texto": "¡Listo! Te abro WhatsApp con el pedido escrito. Envíalo y mi familia te responde por ahí para coordinar la entrega."})
+    mensajes.append({"de": "melloco", "texto": "¡Listo! Tu pedido quedó guardado. Toca «Enviar por WhatsApp» para mandármelo con el mensaje ya escrito; mi familia te responde por ahí para confirmar precio, fecha y entrega."})
     ctx = _contexto_chat("fin", {}, mensajes, preguntar=False)
     ctx["chat_wa_url"] = wa_url
-    respuesta = render(request, "pedidos/partials/chat_paso.html", ctx)
-    respuesta["HX-Trigger-After-Settle"] = json.dumps({"abrirWhatsapp": {"url": wa_url}})
-    return respuesta
+    return render(request, "pedidos/partials/chat_paso.html", ctx)
 
 
 # ---------------------------------------------------------------------------

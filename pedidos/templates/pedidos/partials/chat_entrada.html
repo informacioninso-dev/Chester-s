@@ -45,12 +45,12 @@
     {% include "pedidos/partials/campo_trampa.html" %}
     <button type="submit"
             class="mt-3 w-full rounded-full bg-collar-600 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-collar-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-collar-600/30">
-      <span class="en-reposo">Confirmar y abrir WhatsApp</span><span class="al-enviar">Guardando…</span>
+      <span class="en-reposo">Confirmar pedido</span><span class="al-enviar">Guardando…</span>
     </button>
 
   {% else %}
     <a href="{{ chat_wa_url }}" target="_blank" rel="noopener"
-       class="block w-full rounded-full bg-slate-900 px-5 py-3 text-center text-sm font-extrabold text-white transition hover:bg-slate-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/30">Abrir WhatsApp</a>
+       class="block w-full rounded-full bg-slate-900 px-5 py-3 text-center text-sm font-extrabold text-white transition hover:bg-slate-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/30">Enviar por WhatsApp<span class="sr-only"> (se abre en otra pestaña)</span></a>
   {% endif %}
 
   {% if not chat_inicio %}

@@ -1,5 +1,7 @@
 import datetime
+import html
 import json
+import re
 import os
 import subprocess
 import sys
@@ -17,6 +19,13 @@ from .models import Cotizacion, LeadCumple
 HTMX = {"HTTP_HX_REQUEST": "true"}
 
 
+def enlace_whatsapp(respuesta):
+    """URL del botón "Enviar por WhatsApp" de la respuesta (spec 007: no hay redirección automática)."""
+    m = re.search(r'href="(https://wa\.me/[^"]+)"', respuesta.content.decode())
+    assert m, "la respuesta no tiene enlace a WhatsApp"
+    return html.unescape(m.group(1))
+
+
 def manana():
     return (timezone.localdate() + datetime.timedelta(days=1)).isoformat()
 
@@ -25,7 +34,7 @@ class IndexTests(TestCase):
     def test_landing_tiene_las_cuatro_secciones(self):
         r = self.client.get(reverse("pedidos:index"))
         self.assertContains(r, "Su cumpleaños también merece pastel.")
-        self.assertContains(r, "Crear el pastel de mi perrito")
+        self.assertContains(r, "Pedir su pastel")
         self.assertContains(r, 'id="configurador-panel"')
         self.assertContains(r, "La Ruleta de Melloco")
         self.assertContains(r, "nuestro mejor amigo <span class=\"italic\">barbón.</span>", html=False)
@@ -135,7 +144,8 @@ class ConfirmarTests(TestCase):
         self.assertEqual((c.nombre_cliente, c.telefono, c.nombre_perro), ("Ana", "0991234567", "Rocky"))
         self.assertFalse(c.sincronizado_crm)
 
-        url = json.loads(r["HX-Trigger-After-Settle"])["abrirWhatsapp"]["url"]
+        self.assertNotIn("HX-Trigger-After-Settle", r)  # no salta sola a WhatsApp
+        url = enlace_whatsapp(r)
         partes = urlparse(url)
         self.assertEqual(partes.netloc + partes.path, "wa.me/593991112233")
         self.assertEqual(
@@ -144,7 +154,7 @@ class ConfirmarTests(TestCase):
             "para el cumpleaños de Rocky el 15 de diciembre de 2099",
         )
         self.assertContains(r, "¡Casi listo! Solo falta enviarle el mensaje a Melloco.")
-        self.assertContains(r, "el pedido de Rocky ya escrito")
+        self.assertContains(r, "El pedido de Rocky quedó guardado")
         self.assertContains(r, "te responde por ahí")
 
     def test_sin_consentimiento_no_guarda(self):
@@ -333,7 +343,7 @@ class CampoTrampaTests(TestCase):
         with mock.patch("pedidos.views.notificar_binn") as notificar:
             r = self.client.post(reverse("pedidos:confirmar"), {**PEDIDO, "sitio_web": "x"}, **HTMX)
         self.assertEqual(r.status_code, 200)
-        self.assertIn("abrirWhatsapp", r["HX-Trigger-After-Settle"])
+        self.assertTrue(enlace_whatsapp(r).startswith("https://wa.me/"))
         self.assertEqual(Cotizacion.objects.count(), 0)
         notificar.assert_not_called()
 
@@ -544,10 +554,12 @@ class ChatTests(TestCase):
         c = Cotizacion.objects.get()
         self.assertEqual((c.nombre_perro, c.telefono, c.receta), ("Rocky", "0991234567", "carne_pure"))
         notificar.assert_called_once_with(c)
-        url = json.loads(r["HX-Trigger-After-Settle"])["abrirWhatsapp"]["url"]
+        self.assertNotIn("HX-Trigger-After-Settle", r)
+        url = enlace_whatsapp(r)
         self.assertTrue(url.startswith("https://wa.me/593991112233?text="))
         self.assertIn(quote_mensaje("Hola Melloco, quiero confirmar el pastel de carne y puré"), url)
-        self.assertContains(r, "Abrir WhatsApp")
+        self.assertContains(r, "Enviar por WhatsApp")
+        self.assertContains(r, "quedó guardado")
         self.assertContains(r, "Hacer otro pedido")
 
     def test_sin_autorizacion_no_guarda(self):
@@ -559,7 +571,7 @@ class ChatTests(TestCase):
     def test_campo_trampa_no_guarda(self):
         datos = {k: v for k, v in PEDIDO.items() if k not in ("paso", "acepta_datos")}
         r = self.responder("acepta_datos", "on", sitio_web="spam", **datos)
-        self.assertIn("abrirWhatsapp", r["HX-Trigger-After-Settle"])
+        self.assertTrue(enlace_whatsapp(r).startswith("https://wa.me/"))
         self.assertEqual(Cotizacion.objects.count(), 0)
 
     @override_settings(CHESTERS_LIMITE_ENVIOS=1)
@@ -659,3 +671,47 @@ class EquipoYGestionTests(TestCase):
         self.assertIs(self.lead.to_crm()["regalo_enviado"], False)
         r = self.client.get(reverse("pedidos:api_cotizaciones"), HTTP_X_BINN_TOKEN="secreto")
         self.assertEqual(r.json()["resultados"][0]["estado"], "nuevo")
+
+
+# ---------------------------------------------------------------------------
+# Spec 007 · Celular primero y paso a WhatsApp sin saltos
+# ---------------------------------------------------------------------------
+
+class PasoAWhatsAppTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def test_confirmar_muestra_que_sigue_y_abre_whatsapp_en_otra_pestana(self):
+        r = self.client.post(reverse("pedidos:confirmar"), PEDIDO, **HTMX)
+        self.assertNotIn("HX-Trigger-After-Settle", r)
+        self.assertContains(r, "quedó guardado")
+        self.assertContains(r, "confirmar precio, fecha y entrega")
+        self.assertContains(r, 'target="_blank"')
+        self.assertContains(r, "Enviar por WhatsApp")
+        self.assertContains(r, "(se abre en otra pestaña)")
+
+    def test_la_pagina_ya_no_redirige_sola(self):
+        r = self.client.get(reverse("pedidos:index"))
+        self.assertNotContains(r, "abrirWhatsapp")
+        self.assertNotContains(r, "window.location.href")
+
+    def test_sin_javascript_confirmar_sigue_llevando_a_whatsapp(self):
+        r = self.client.post(reverse("pedidos:confirmar"), PEDIDO)
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(r["Location"].startswith("https://wa.me/"))
+
+    def test_un_solo_verbo_para_pedir(self):
+        r = self.client.get(reverse("pedidos:index"))
+        for viejo in ("Haz tu pedido", "Hacer un pedido", "Crear el pastel de mi perrito"):
+            self.assertNotContains(r, viejo)
+        self.assertContains(r, "Pedir su pastel", count=3)  # menú, portada y pie
+        paso4 = self.client.post(reverse("pedidos:configurador"), {**PEDIDO, "paso": 3, "ir_a": 4}, **HTMX)
+        self.assertContains(paso4, "Confirmar pedido")
+        self.assertNotContains(paso4, "Confirmar por WhatsApp")
+
+    def test_portada_primero_el_texto_y_boton_flotante_secundario(self):
+        html_portada = self.client.get(reverse("pedidos:index")).content.decode()
+        self.assertLess(html_portada.index("Su cumpleaños también merece pastel."), html_portada.index("pedidos/img/logo-640.webp"))
+        boton = re.search(r'<button type="button" id="chat-abrir"[^>]*class="([^"]+)"', html_portada, re.S)
+        self.assertIn("bg-slate-900", boton.group(1))
+        self.assertNotIn("bg-collar-600", boton.group(1))

@@ -36,9 +36,13 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 
 - 2026-11-12 · Portada sin patrones de "landing hecha por IA" — pedido del dueño. Evitar: etiqueta en cápsula con puntito sobre el título, título partido en dos con la segunda frase en cursiva de color, pares de adjetivos genéricos ("saludables y artesanales"), frases en espejo ("inspirados por…, aprobados por…") y emoji al final de la frase. Escribir como la familia: quiénes somos, qué hacemos y cómo. Título actual: "Su cumpleaños también merece pastel."
 
+- 2026-11-12 · WhatsApp **nunca se abre solo** (spec 007): confirmar guarda el pedido y muestra la pantalla de Melloco con "Enviar por WhatsApp" en otra pestaña y qué sigue. La redirección automática ocultaba esa pantalla y cambiaba la página sin aviso. Un solo verbo para pedir: "Pedir" / "Pedir su pastel"; el chat es el camino secundario (botón azul marino). Decisión del dueño tras la revisión de impeccable (26/40).
+
 ## Pendientes conocidos
 
 - Revisar con un abogado el texto de `/privacidad/` (spec 001) y agregar razón social/RUC del responsable.
 - Mover el webhook a una cola (Celery/RQ) si sube el volumen.
 - Dar de alta el dominio en Google Search Console y crear el perfil de Google Business (dirección y horario también irían al JSON-LD).
+- Mostrar precio desde, porciones, zona de entrega y días de anticipación (esperando los datos del dueño); poner la anticipación como fecha mínima.
+- P2 de la revisión de impeccable: etiquetas en mayúsculas sobre los títulos, historia de Chester, nombre de la Ruleta, emoji 🐾, enlaces de 20 px.
 - Content-Security-Policy: después de compilar Tailwind (spec 003) y sacar los `hx-on` en línea.

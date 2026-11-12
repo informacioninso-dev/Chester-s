@@ -18,7 +18,7 @@
         <span translate="no" class="font-display text-xl font-semibold tracking-tight">Chester’s</span>
       </a>
       <nav class="hidden items-center gap-8 text-sm font-semibold text-slate-600 md:flex" aria-label="Principal">
-        <a href="#configurador" class="transition hover:text-slate-900">Haz tu pedido</a>
+        <a href="#configurador" class="transition hover:text-slate-900">Pedir su pastel</a>
         <a href="#ruleta" class="transition hover:text-slate-900">Ruleta de Melloco</a>
         <a href="#historia" class="transition hover:text-slate-900">Nuestra historia</a>
       </nav>
@@ -30,7 +30,7 @@
     {# ───────────────────────── 1. HERO ───────────────────────── #}
     <section id="inicio" class="relative overflow-hidden">
       <div class="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-20 pt-10 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:pb-28 lg:pt-20">
-        <div class="order-2 lg:order-1 lg:col-span-6">
+        <div class="order-1 lg:col-span-6">
           <h1 class="text-balance font-display text-5xl font-medium leading-[1.04] tracking-tight sm:text-6xl lg:text-7xl">
             Su cumpleaños también merece pastel.
           </h1>
@@ -45,7 +45,7 @@
                             htmx.find('#configurador').scrollIntoView({behavior: 'smooth', block: 'start'});
                             setTimeout(() => htmx.find('#configurador-panel input:not([type=hidden])')?.focus({preventScroll: true}), 700);"
                class="group inline-flex items-center gap-3 rounded-full bg-collar-600 px-7 py-4 text-base font-extrabold text-white shadow-lg shadow-collar-600/25 transition hover:-translate-y-0.5 hover:bg-collar-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-collar-600/30">
-              Crear el pastel de mi perrito
+              Pedir su pastel
               <svg class="h-5 w-5 transition group-hover:translate-y-0.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4v12m0 0 5-5m-5 5-5-5"/></svg>
             </a>
             <a href="#historia" class="text-sm font-bold text-slate-700 underline decoration-stone-300 underline-offset-4 transition hover:decoration-slate-900">Conoce a Chester</a>
@@ -82,8 +82,8 @@
           </div>
         </div>
 
-        <div class="order-1 lg:order-2 lg:col-span-6">
-          <div class="relative mx-auto max-w-sm sm:max-w-md lg:max-w-none">
+        <div class="order-2 lg:col-span-6">
+          <div class="relative mx-auto max-w-[16rem] sm:max-w-md lg:max-w-none">
             <div class="absolute -inset-3 rotate-3 rounded-[2.75rem] bg-crema-300/60" aria-hidden="true"></div>
             <div class="relative overflow-hidden rounded-[2.5rem] bg-crema shadow-2xl shadow-stone-400/30 ring-1 ring-black/5">
               <picture>
@@ -175,11 +175,11 @@
       </div>
 
       <footer class="border-t border-slate-900/10">
-        <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 pb-28 pt-8 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <p>© {% now "Y" %} <span translate="no">Chester’s</span> · Pasteles para perritos</p>
           <div class="flex gap-6 font-semibold">
             <a href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener" class="hover:text-slate-900">WhatsApp</a>
-            <a href="#configurador" class="hover:text-slate-900">Hacer un pedido</a>
+            <a href="#configurador" class="hover:text-slate-900">Pedir su pastel</a>
             <a href="{% url 'pedidos:privacidad' %}" class="hover:text-slate-900">Privacidad</a>
           </div>
         </div>
@@ -191,11 +191,6 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // Tras confirmar el pedido, el servidor dispara este evento con la URL de WhatsApp.
-      document.body.addEventListener('abrirWhatsapp', (e) => {
-        setTimeout(() => { window.location.href = e.detail.url; }, 900);
-      });
-
       // Chat con Melloco (spec 005): abrir/cerrar, Esc, y tras cada respuesta bajar al último mensaje.
       const chatPanel = document.getElementById('chat-panel');
       const chatBoton = document.getElementById('chat-abrir');
@@ -218,7 +213,7 @@
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && chatAbierto()) mostrarChat(false); });
       document.body.addEventListener('htmx:afterSettle', (e) => { if (chatPanel.contains(e.target)) chatAlFinal(); });
 
-      // Mientras el configurador o la Ruleta ocupan el centro de la pantalla, el botón del chat
+      // Mientras el configurador, la Ruleta (o la portada, en el celular) ocupan el centro de la pantalla, el botón del chat
       // se esconde para no tapar sus campos (en el celular quedaba encima del WhatsApp).
       const zonasConFormulario = new Set();
       const ocultarBotonChat = () => {
@@ -229,7 +224,9 @@
         entradas.forEach((e) => (e.isIntersecting ? zonasConFormulario.add(e.target) : zonasConFormulario.delete(e.target)));
         ocultarBotonChat();
       }, { rootMargin: '-35% 0px -35% 0px' });
-      ['configurador', 'ruleta'].forEach((id) => { const zona = document.getElementById(id); if (zona) observador.observe(zona); });
+      const zonas = ['configurador', 'ruleta'];
+      if (window.matchMedia('(max-width: 639px)').matches) zonas.push('inicio');  // en el celular taparía el botón principal
+      zonas.forEach((id) => { const zona = document.getElementById(id); if (zona) observador.observe(zona); });
 
       // Después de cada paso: si el panel quedó fuera de vista, súbelo; y mueve el foco al título.
       document.body.addEventListener('htmx:afterSwap', (e) => {
