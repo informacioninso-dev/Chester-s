@@ -1,6 +1,6 @@
 # 018 · Seguridad: roles, datos personales y red
 
-**Estado:** en curso
+**Estado:** hecha (falta lo no aprobado: 2 y 4)
 **Fecha:** 2026-11-12
 
 ## Qué y por qué
@@ -61,12 +61,17 @@ Los hallazgos 1, 3, 5, 6, 7, 8 y 10. Quedan fuera por ahora el 2 (respaldo autom
 - [x] **Cocina sin datos de contacto:** quien solo está en Cocina no ve el teléfono, la dirección ni el WhatsApp de la familia (ni en el pedido ni en la ficha), y no puede editar la entrega. Atención, Reparto y el administrador sí los ven.
 - [x] **Sesiones de 12 horas** que se renuevan con el uso.
 - [x] **El refresco automático no cierra la receta abierta** (ajuste que salió al quitar el eval de htmx).
-- [ ] **Red propia:** `chesters-web` deja la red de Licitar. Caddy se conecta a la red `chesters_proxy`, y el compose de Licitar la declara para que se mantenga.
-- [ ] **HSTS de 1 año** en producción (`DJANGO_HSTS_SECONDS`).
-- [ ] **Respaldos manuales de hoy eliminados**, porque tienen datos personales.
-- [ ] **Servidor reiniciado** con el kernel nuevo, y Licitar y Chester’s respondiendo 200 después.
+- [x] **Red propia:** `chesters-web` deja la red de Licitar. Caddy se conecta a la red `chesters_proxy`, y el compose de Licitar la declara para que se mantenga.
+- [x] **HSTS de 1 año** en producción (`DJANGO_HSTS_SECONDS`).
+- [x] **Respaldos manuales de hoy eliminados**, porque tienen datos personales.
+- [x] **Servidor reiniciado** con el kernel nuevo, y Licitar y Chester’s respondiendo 200 después.
 
-## Resultado parcial
+## Resultado
 
 - **147 tests:** 4 nuevos en `SeguridadSpec018Tests`.
 - **Probado en Chrome** con la CSP activa: portada, configurador, chat, acciones rápidas del gestor y confirmación de cancelar. Hubo **0 bloqueos de la política** y 0 errores de JavaScript.
+- **Red:** `chesters-web` está solo en `chesters_proxy`. Caddy está en `chesters_proxy` y en `licitar_default`. El compose de Licitar declara la red, para que se mantenga si se recrea Caddy (commit `e48d03f` en Licitar).
+- **HSTS:** `max-age=31536000` y CSP activa en producción.
+- **Respaldos manuales:** se borraron los 4. En `/datos` solo queda `db.sqlite3`.
+- **Reinicio:** el servidor arrancó con el kernel `6.8.0-149-generic` y ya no pide otro reinicio. Licitar y Chester’s volvieron en 47 segundos y todos los contenedores arrancaron solos. Las redes, fail2ban y ssh están activos.
+- **Pendiente:** el respaldo automático diario (hallazgo 2). Hoy **no hay ningún respaldo** de la base de Chester’s.

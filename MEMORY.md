@@ -61,7 +61,7 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 
 ## Pendientes conocidos
 
-- Seguridad (spec 018, borrador del 12-nov-2026): red propia para Chester’s separada de la base y el redis de Licitar, respaldo diario fuera del volumen, reiniciar el servidor por el kernel, limitar lo que Cocina y Reparto pueden cambiar y ver, sesiones de 12 h y CSP.
+- **Respaldo diario automático de la base de Chester’s (spec 018, hallazgo 2): hoy no hay ningún respaldo.** También queda pendiente que Cocina y Reparto no puedan confirmar ni cancelar pedidos (hallazgo 4).
 - Revisar con un abogado el texto de `/privacidad/` (spec 001) y agregar razón social/RUC del responsable.
 - Mover el webhook a una cola (Celery/RQ) si sube el volumen.
 - Dar de alta el dominio en Google Search Console y crear el perfil de Google Business (dirección y horario también irían al JSON-LD).
