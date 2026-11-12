@@ -1,0 +1,44 @@
+{% extends "pedidos/equipo/base.html" %}
+{% block titulo %}Equipo{% endblock %}
+{% block contenido %}
+<div class="flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="font-display text-3xl font-medium tracking-tight">Equipo</h1>
+    <p class="mt-1 text-sm text-slate-600">Las personas que entran al gestor y lo que hace cada una.</p>
+  </div>
+  <a href="{% url 'pedidos:equipo_persona_nueva' %}"
+     class="inline-flex min-h-12 items-center gap-2 rounded-full bg-collar-600 px-5 font-extrabold text-white shadow-lg shadow-collar-600/20 transition hover:bg-collar-700">
+    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M10 4v12M4 10h12"/></svg>
+    Agregar persona
+  </a>
+</div>
+
+<ul class="mt-6 space-y-2">
+  {% for f in filas %}
+    {% with u=f.u %}
+    <li>
+      <a href="{% if u.is_superuser and u != request.user %}#{% else %}{% url 'pedidos:equipo_persona' u.pk %}{% endif %}"
+         class="group flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-stone-200 transition hover:ring-slate-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-collar-600/20 {% if not u.is_active %}opacity-60{% endif %}">
+        <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full font-display text-xl font-medium {% if u.is_active %}bg-crema-100 text-slate-800{% else %}bg-stone-200 text-slate-500{% endif %}" aria-hidden="true">{{ u.first_name|default:u.username|first|upper }}</span>
+        <span class="min-w-0 flex-1">
+          <span class="flex flex-wrap items-center gap-2">
+            <span class="truncate font-display text-lg font-medium">{{ u.get_full_name|default:u.username }}</span>
+            {% if u == request.user %}<span class="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-bold text-slate-600">Tú</span>{% endif %}
+            {% if not u.is_active %}<span class="rounded-full bg-stone-200 px-2 py-0.5 text-xs font-extrabold uppercase tracking-wide text-slate-600">Sin acceso</span>{% endif %}
+          </span>
+          <span class="mt-1 flex flex-wrap gap-1.5 text-xs font-bold">
+            {% if u.is_superuser %}<span class="rounded-full bg-slate-900 px-2.5 py-1 text-white">Administrador</span>{% endif %}
+            {% for r in f.roles %}<span class="rounded-full bg-crema-100 px-2.5 py-1 text-slate-800">{{ r }}</span>{% endfor %}
+            {% if not u.is_superuser and not f.roles %}<span class="rounded-full bg-collar-50 px-2.5 py-1 text-collar-800">Sin tareas: no puede entrar al gestor</span>{% endif %}
+          </span>
+          <span class="mt-1 block text-xs text-slate-500">Usuario: {{ u.username }} · {% if u.last_login %}Entró {{ u.last_login|timesince }} atrás{% else %}Nunca ha entrado{% endif %}</span>
+        </span>
+        {% if not u.is_superuser or u == request.user %}
+          <svg class="h-5 w-5 shrink-0 text-slate-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 5 5 5-5 5"/></svg>
+        {% endif %}
+      </a>
+    </li>
+    {% endwith %}
+  {% endfor %}
+</ul>
+{% endblock %}

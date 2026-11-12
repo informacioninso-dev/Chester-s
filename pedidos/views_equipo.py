@@ -5,6 +5,7 @@ detalle de cada pedido con su entrega, y las fichas de los perritos con sus gust
 """
 
 import datetime
+import secrets
 from functools import wraps
 
 from django import forms
@@ -12,6 +13,8 @@ from django.contrib import messages
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION, LogEntry
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.models import Group
 from django.contrib.auth.views import LoginView
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Count, F, Max, Q
@@ -19,6 +22,7 @@ from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from .forms import INPUT
@@ -91,9 +95,21 @@ def equipo_requerido(vista):
     return envoltura
 
 
+class IngresoSinMayusculas(AuthenticationForm):
+    """Spec 014: "Carla " entra como "carla". El equipo no es muy tecnológico."""
+
+    def clean(self):
+        escrito = " ".join((self.cleaned_data.get("username") or "").split())
+        if escrito:
+            real = get_user_model().objects.filter(username__iexact=escrito).values_list("username", flat=True)
+            self.cleaned_data["username"] = real[0] if len(real) == 1 else escrito
+        return super().clean()
+
+
 class Ingresar(LoginView):
     template_name = "pedidos/equipo/ingresar.html"
     redirect_authenticated_user = True
+    authentication_form = IngresoSinMayusculas
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
@@ -583,4 +599,137 @@ def recetario_item(request, tipo, pk=None):
     return render(request, "pedidos/equipo/recetario_item.html", {
         "tipo": tipo, "conf": conf, "obj": obj, "form": form, "editar": editar, "usados": usados,
         "editando": obj is None or (editar and (request.GET.get("editar") == "1" or request.method == "POST")),
+    })
+
+
+# ---------------------------------------------------------------------------
+# Equipo (spec 014): el administrador agrega personas sin tecnicismos
+# ---------------------------------------------------------------------------
+
+ROLES = [
+    (ATENCION, "Atiende pedidos", "Confirma pedidos con las familias, asigna y edita el Recetario."),
+    (COCINA, "Cocina", "Toma pedidos y los prepara siguiendo el Recetario."),
+    (REPARTO, "Reparte", "Lleva los pasteles y los marca como entregados."),
+]
+
+PALABRAS = (
+    "huesito galleta pastel patita collar pelota colita bigote manzana zanahoria ladrido siesta "
+    "paseo jardin parque mantita cojin salto trufa canela miel avena yogur queso arroz pollo "
+    "carne papa calabaza mango fresa coco nube luna sol estrella hoja flor arbol rio playa "
+    "arena ola brisa lluvia nieve fuego chispa globo vela regalo fiesta torta lazo moño "
+    "risa abrazo beso amigo hogar puerta ventana cama sofa taza"
+).split()
+
+
+def contrasena_facil():
+    """Tres palabras y tres números: fácil de dictar, difícil de adivinar."""
+    palabras = [secrets.choice(PALABRAS) for _ in range(3)]
+    return "-".join(palabras) + f"-{secrets.randbelow(900) + 100}"
+
+
+def _usuario_desde(nombre):
+    base = slugify(nombre.split()[0] if nombre.split() else "persona").replace("-", "")[:20] or "persona"
+    usuario, n = base, 2
+    while get_user_model().objects.filter(username__iexact=usuario).exists():
+        usuario, n = f"{base}{n}", n + 1
+    return usuario
+
+
+def solo_administrador(vista):
+    @wraps(vista)
+    def envoltura(request, *args, **kwargs):
+        if not request.user.is_superuser:
+            return render(request, "pedidos/equipo/sin_acceso.html", status=403)
+        return vista(request, *args, **kwargs)
+    return equipo_requerido(envoltura)
+
+
+class PersonaForm(forms.Form):
+    nombre = forms.CharField(label="Nombre", max_length=60,
+                             widget=forms.TextInput(attrs={"class": INPUT, "placeholder": "Ej.: Carla Mendoza",
+                                                           "autocomplete": "off", "autocapitalize": "words"}),
+                             error_messages={"required": "Escribe el nombre de la persona."})
+    roles = forms.MultipleChoiceField(label="¿Qué hace?", choices=[(g, n) for g, n, _ in ROLES],
+                                      widget=forms.CheckboxSelectMultiple,
+                                      error_messages={"required": "Marca al menos una tarea."})
+
+
+def _roles_de(user):
+    nombres = dict((g, n) for g, n, _ in ROLES)
+    return [nombres[g] for g in user.groups.values_list("name", flat=True) if g in nombres]
+
+
+def _guardar_credenciales(request, user, contrasena):
+    request.session["credenciales"] = {"pk": user.pk, "usuario": user.username, "contrasena": contrasena}
+
+
+@require_GET
+@solo_administrador
+def personas(request):
+    gente = get_user_model().objects.order_by("-is_active", "-is_superuser", "first_name", "username")
+    filas = [{"u": u, "roles": _roles_de(u)} for u in gente.prefetch_related("groups")]
+    return render(request, "pedidos/equipo/personas.html", {"filas": filas})
+
+
+@require_http_methods(["GET", "POST"])
+@solo_administrador
+def persona(request, pk=None):
+    User = get_user_model()
+    u = get_object_or_404(User, pk=pk) if pk else None
+    if u and u.is_superuser and u != request.user:
+        messages.error(request, "A otro administrador no se le edita desde aquí.")
+        return HttpResponseRedirect(reverse("pedidos:equipo_personas"))
+
+    if request.method == "POST" and u and request.POST.get("accion") in ("contrasena", "quitar", "devolver"):
+        accion = request.POST["accion"]
+        if accion == "contrasena":
+            contrasena = contrasena_facil()
+            u.set_password(contrasena)
+            u.save(update_fields=["password"])
+            _registrar(request, u, "Nueva contraseña (gestor)")
+            _guardar_credenciales(request, u, contrasena)
+        elif u == request.user:
+            messages.error(request, "No puedes quitarte el acceso a ti mismo.")
+        else:
+            u.is_active = accion == "devolver"
+            u.save(update_fields=["is_active"])
+            _registrar(request, u, "Acceso devuelto (gestor)" if u.is_active else "Acceso quitado (gestor)")
+            messages.success(request, f"{u.get_full_name() or u.username} {'vuelve a tener' if u.is_active else 'ya no tiene'} acceso al gestor.")
+        return HttpResponseRedirect(reverse("pedidos:equipo_persona", args=[u.pk]))
+
+    if request.method == "POST":
+        form = PersonaForm(request.POST)
+        if form.is_valid():
+            nombre = " ".join(form.cleaned_data["nombre"].split())
+            partes = nombre.split(" ", 1)
+            nuevo = u is None
+            if nuevo:
+                u = User(username=_usuario_desde(nombre), is_staff=False)
+                contrasena = contrasena_facil()
+                u.set_password(contrasena)
+            u.first_name, u.last_name = partes[0][:150], (partes[1] if len(partes) > 1 else "")[:150]
+            u.save()
+            if not u.is_superuser:
+                u.groups.set(Group.objects.filter(name__in=form.cleaned_data["roles"]))
+            _registrar(request, u, "Creada en el gestor" if nuevo else "Editada en el gestor")
+            if nuevo:
+                _guardar_credenciales(request, u, contrasena)
+            else:
+                messages.success(request, "Cambios guardados.")
+            return HttpResponseRedirect(reverse("pedidos:equipo_persona", args=[u.pk]))
+    else:
+        form = PersonaForm(initial={"nombre": u.get_full_name(), "roles": list(u.groups.values_list("name", flat=True))}
+                           if u else None)
+
+    credenciales = request.session.pop("credenciales", None)
+    if credenciales and (not u or credenciales["pk"] != u.pk):
+        credenciales = None
+    enlace = request.build_absolute_uri(reverse("pedidos:equipo_ingresar"))
+    mensaje = ""
+    if credenciales:
+        mensaje = (f"Hola {u.first_name}, ya tienes acceso al equipo de Chester’s.\n"
+                   f"Entra aquí: {enlace}\nUsuario: {credenciales['usuario']}\nContraseña: {credenciales['contrasena']}")
+    return render(request, "pedidos/equipo/persona.html", {
+        "u": u, "form": form, "roles": ROLES, "credenciales": credenciales, "mensaje": mensaje,
+        "roles_actuales": _roles_de(u) if u else [], "es_yo": u == request.user,
     })

@@ -22,6 +22,9 @@ urlpatterns = [
     path("equipo/perritos/", views_equipo.perritos, name="equipo_perritos"),
     path("equipo/perrito/<int:pk>/", views_equipo.ficha, name="equipo_ficha"),
     path("equipo/recetario/", views_equipo.recetario, name="equipo_recetario"),
+    path("equipo/personas/", views_equipo.personas, name="equipo_personas"),
+    path("equipo/personas/nueva/", views_equipo.persona, name="equipo_persona_nueva"),
+    path("equipo/personas/<int:pk>/", views_equipo.persona, name="equipo_persona"),
     path("equipo/recetario/<str:tipo>/nueva/", views_equipo.recetario_item, name="equipo_recetario_nuevo"),
     path("equipo/recetario/<str:tipo>/<int:pk>/", views_equipo.recetario_item, name="equipo_recetario_item"),
     # API para el CRM Binn

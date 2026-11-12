@@ -1319,3 +1319,78 @@ class RecetarioTests(TestCase):
         r = self.client.get(reverse("pedidos:equipo_recetario_nuevo", args=["receta"]))
         self.assertContains(r, 'name="orden" value="3"', html=False)
         self.assertNotContains(r, 'name="disponible" checked', html=False)
+
+
+class EquipoPersonasTests(TestCase):
+    """Spec 014: el administrador agrega personas sin tecnicismos."""
+
+    def setUp(self):
+        self.jefe = persona("jefe", is_superuser=True, is_staff=True, first_name="Fer")
+        self.client.force_login(self.jefe)
+        self.lista = reverse("pedidos:equipo_personas")
+
+    def test_solo_el_administrador_ve_equipo(self):
+        self.assertContains(self.client.get(reverse("pedidos:equipo")), f'href="{self.lista}"')
+        self.client.force_login(persona("ana", "Atención de pedidos"))
+        self.assertNotContains(self.client.get(reverse("pedidos:equipo")), f'href="{self.lista}"')
+        self.assertEqual(self.client.get(self.lista).status_code, 403)
+
+    def test_agregar_persona_con_nombre_y_tareas(self):
+        r = self.client.post(reverse("pedidos:equipo_persona_nueva"),
+                             {"nombre": "  Carla   Mendoza ", "roles": ["Cocina", "Reparto"]}, follow=True)
+        carla = User.objects.get(username="carla")
+        self.assertEqual((carla.first_name, carla.last_name, carla.is_staff), ("Carla", "Mendoza", False))
+        self.assertEqual(set(carla.groups.values_list("name", flat=True)), {"Cocina", "Reparto"})
+        html = r.content.decode()
+        self.assertIn("Listo, Carla ya puede entrar", html)
+        self.assertIn("Copiar mensaje", html)
+        contrasena = re.search(r"Contraseña: ([a-zñ]+-[a-zñ]+-[a-zñ]+-\d{3})", html).group(1)
+        self.assertIn("/equipo/ingresar/", html)
+        self.assertTrue(carla.check_password(contrasena))
+        # Una sola vez: al recargar ya no se ve.
+        self.assertNotContains(self.client.get(reverse("pedidos:equipo_persona", args=[carla.pk])), contrasena)
+        self.client.post(reverse("pedidos:equipo_persona_nueva"), {"nombre": "Carla Ruiz", "roles": ["Cocina"]})
+        self.assertTrue(User.objects.filter(username="carla2").exists())
+
+    def test_pide_nombre_y_al_menos_una_tarea(self):
+        r = self.client.post(reverse("pedidos:equipo_persona_nueva"), {"nombre": ""})
+        self.assertContains(r, "Escribe el nombre de la persona.")
+        self.assertContains(r, "Marca al menos una tarea.")
+
+    def test_nueva_contrasena_y_quitar_acceso(self):
+        carla = persona("carla", "Cocina", first_name="Carla")
+        url = reverse("pedidos:equipo_persona", args=[carla.pk])
+        r = self.client.post(url, {"accion": "contrasena"}, follow=True)
+        contrasena = re.search(r"Contraseña: ([a-zñ]+-[a-zñ]+-[a-zñ]+-\d{3})", r.content.decode()).group(1)
+        carla.refresh_from_db()
+        self.assertTrue(carla.check_password(contrasena))
+        self.assertFalse(carla.check_password("clave-segura-123"))
+        self.client.post(url, {"accion": "quitar"})
+        carla.refresh_from_db()
+        self.assertFalse(carla.is_active)
+        self.client.post(url, {"accion": "devolver"})
+        carla.refresh_from_db()
+        self.assertTrue(carla.is_active)
+
+    def test_no_se_quita_el_acceso_a_si_mismo_ni_toca_a_otros_admins(self):
+        self.client.post(reverse("pedidos:equipo_persona", args=[self.jefe.pk]), {"accion": "quitar"})
+        self.jefe.refresh_from_db()
+        self.assertTrue(self.jefe.is_active)
+        otro = persona("otro", is_superuser=True)
+        r = self.client.post(reverse("pedidos:equipo_persona", args=[otro.pk]), {"accion": "quitar"}, follow=True)
+        self.assertContains(r, "A otro administrador no se le edita desde aquí.")
+        otro.refresh_from_db()
+        self.assertTrue(otro.is_active)
+
+    def test_ingresar_sin_importar_mayusculas_ni_espacios(self):
+        persona("carla", "Cocina")
+        self.client.logout()
+        r = self.client.post(reverse("pedidos:equipo_ingresar"), {"username": " Carla ", "password": "clave-segura-123"})
+        self.assertRedirects(r, reverse("pedidos:equipo"), fetch_redirect_response=False)
+
+    def test_contrasena_facil_de_dictar(self):
+        from .views_equipo import contrasena_facil
+        claves = {contrasena_facil() for _ in range(50)}
+        self.assertGreater(len(claves), 45)
+        for c in claves:
+            self.assertRegex(c, r"^[a-zñ]+-[a-zñ]+-[a-zñ]+-\d{3}$")

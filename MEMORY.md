@@ -51,6 +51,8 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 
 - 2026-11-12 · Recetas y formas viven en el **Recetario** (spec 013), no en el código. Cada una tiene una `clave` fija que no cambia aunque se renombre: la usan el formulario, el chat y Binn. Las claves originales (`carne_pure`, `manzana_zanahoria_yogur`, `huesito`, `redondo`) se conservaron.
 
+- 2026-11-12 · El equipo de Chester’s no es muy tecnológico: los usuarios se crean desde la pestaña **Equipo** del gestor (spec 014), con contraseñas de palabras fáciles de dictar que se muestran una sola vez. A las personas nuevas no se les marca staff. Lo administra solo el superusuario.
+
 ## Pendientes conocidos
 
 - Revisar con un abogado el texto de `/privacidad/` (spec 001) y agregar razón social/RUC del responsable.

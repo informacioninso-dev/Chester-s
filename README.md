@@ -32,7 +32,9 @@ Tests: `python manage.py test pedidos`
 - **Recetario** (spec 013): las recetas y formas que se ofrecen a las familias, con lo que sigue la cocina (ingredientes, pasos, alérgenos y cómo armar cada forma). Solo lo marcado «Disponible» aparece en la página y en el chat. Lo que ya tiene pedidos no se borra, se pausa. Editan Atención de pedidos y el administrador; Cocina y Reparto solo leen.
 - **Perritos:** todas las fichas, con buscador. Cada ficha junta los pedidos y el cumpleaños de la Ruleta y muestra las favoritas. El equipo anota raza, tamaño, lo que le encanta, alergias y notas.
 
-**Usuarios** (los crea el administrador):
+**Usuarios:** el administrador los crea en la pestaña **Equipo** del gestor (spec 014), sin pasar por el panel. Escribe el nombre y marca qué hace la persona (Atiende pedidos, Cocina o Reparte). El usuario y una contraseña fácil de dictar se crean solos y salen en un mensaje listo para mandar por WhatsApp. Desde la ficha de cada persona se genera una **nueva contraseña** o se **quita el acceso**. Al ingresar no importan las mayúsculas ni los espacios del usuario.
+
+Lo que sigue explica cómo hacerlo desde el panel de Django, por si hace falta:
 
 1. **Administrador** (una sola vez): `python manage.py createsuperuser`. Tiene acceso total en `/admin/` y en `/equipo/`.
 2. **Cada persona:** en `/admin/` → *Usuarios* → *Añadir usuario* se pone su usuario y contraseña, y en la pantalla siguiente se escribe su nombre (es el que aparece en el gestor) y se le asigna un grupo:
