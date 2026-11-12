@@ -107,6 +107,7 @@ def _contexto_configurador(paso, datos, form=None):
             "fecha": _fecha_legible(datos.get("fecha_cumple")),
             "receta": dict(Receta.choices).get(datos.get("receta"), ""),
             "estilo": dict(Estilo.choices).get(datos.get("estilo"), ""),
+            "nota": datos.get("nota_familia", ""),
         }
     return {
         "form": form,
@@ -210,6 +211,7 @@ def robots_txt(request):
         "Disallow: /configurador/",
         "Disallow: /ruleta/",
         "Disallow: /chat/",
+        "Disallow: /equipo/",
         "",
         f"Sitemap: {request.build_absolute_uri(reverse('sitemap'))}",
     ]
@@ -347,6 +349,7 @@ PREGUNTAS_CHAT = {
     "nombre_perro": "texto",
     "fecha_cumple": "fecha",
     "receta": "opciones",
+    "nota_familia": "opcional",  # spec 010: alergias o gustos; se puede saltar
     "estilo": "opciones",
     "nombre_cliente": "texto",
     "telefono": "telefono",
@@ -356,6 +359,7 @@ PREGUNTAS_CHAT = {
 ETIQUETAS_CHAT = {
     "nombre_perro": "Nombre de tu perrito",
     "fecha_cumple": "Día de la celebración",
+    "nota_familia": "Algo que debamos saber de tu perrito",
     "nombre_cliente": "Tu nombre",
     "telefono": "Tu WhatsApp",
 }
@@ -375,8 +379,12 @@ def _textos_pregunta(campo, datos):
         return [f"¡Qué lindo nombre! ¿Qué día celebran a {perro}?"]
     if campo == "receta":
         return [f"Tenemos dos recetas caseras y las dos llevan mi aprobación. ¿Cuál crees que le gustará a {perro}?"]
+    if campo == "nota_familia":
+        return ["¡Esa me encanta!",
+                f"Antes de seguir: ¿hay algo que debamos saber de {perro}? Alergias, algo que no pueda "
+                "comer o algo que le encante. Si no, toca «Nada que agregar»."]
     if campo == "estilo":
-        return ["¡Esa me encanta! ¿Y qué forma le hacemos?"]
+        return ["¡Anotado! ¿Y qué forma le hacemos?"]
     if campo == "nombre_cliente":
         return ["¿Y tú cómo te llamas?"]
     if campo == "telefono":
@@ -394,6 +402,8 @@ def _respuesta_legible(campo, valor):
         return _fecha_legible(valor)
     if campo == "acepta_datos":
         return "Confirmo el pedido"
+    if campo == "nota_familia" and not valor:
+        return "Nada que agregar"
     return valor
 
 
@@ -410,6 +420,7 @@ def _contexto_chat(campo, datos, mensajes, preguntar=True):
                 "Fecha": _fecha_legible(datos.get("fecha_cumple")),
                 "Receta": dict(Receta.choices).get(datos.get("receta"), ""),
                 "Forma": dict(Estilo.choices).get(datos.get("estilo"), ""),
+                **({"Nos contaste": datos["nota_familia"]} if datos.get("nota_familia") else {}),
                 "WhatsApp": datos.get("telefono", ""),
             }},
             {"de": "melloco", "texto": "Antes de que salga, yo mismo lo reviso. Si está todo bien, marca la autorización y confírmalo."},
@@ -444,9 +455,14 @@ def chat(request):
     if campo not in PREGUNTAS_CHAT:
         campo = "nombre_perro"
 
+    # La pregunta opcional (lo que la familia nos cuenta) se hace una vez: "nota_respondida" lo recuerda.
+    if campo == "nota_familia" and request.POST.get("nada"):
+        datos.pop("nota_familia", None)
+    nota_respondida = request.POST.get("nota_respondida") == "1" or campo == "nota_familia"
+
     mensajes = []
-    if datos.get(campo):
-        mensajes.append({"de": "cliente", "texto": _respuesta_legible(campo, datos[campo])})
+    if datos.get(campo) or campo == "nota_familia":
+        mensajes.append({"de": "cliente", "texto": _respuesta_legible(campo, datos.get(campo, ""))})
 
     form = PedidoForm(datos)
     form.is_valid()
@@ -455,12 +471,19 @@ def chat(request):
     if campo in form.errors:
         mensajes.append({"de": "melloco", "texto": form.errors[campo][0], "error": True})
         datos.pop(campo, None)
+        if campo == "nota_familia":
+            nota_respondida = False
+        if nota_respondida:
+            datos["nota_respondida"] = "1"
         return render(request, "pedidos/partials/chat_paso.html",
                       _contexto_chat(campo, datos, mensajes, preguntar=False))
 
-    siguiente = next((c for c in PREGUNTAS_CHAT if c in form.errors), None)
+    if nota_respondida:
+        datos["nota_respondida"] = "1"
+    siguiente = next((c for c in PREGUNTAS_CHAT
+                      if c in form.errors or (c == "nota_familia" and not nota_respondida)), None)
     if siguiente:
-        if datos.get(siguiente):  # ya respondida pero dejó de ser válida (p. ej. pasó la fecha)
+        if datos.get(siguiente) and siguiente in form.errors:  # ya respondida pero dejó de ser válida (p. ej. pasó la fecha)
             mensajes.append({"de": "melloco", "texto": form.errors[siguiente][0], "error": True})
             datos.pop(siguiente)
         return render(request, "pedidos/partials/chat_paso.html", _contexto_chat(siguiente, datos, mensajes))

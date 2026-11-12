@@ -29,7 +29,7 @@ class PedidoForm(TelefonoMixin, forms.ModelForm):
 
     PASOS = {
         1: ["nombre_perro", "fecha_cumple"],
-        2: ["receta"],
+        2: ["receta", "nota_familia"],
         3: ["estilo"],
         4: ["nombre_cliente", "telefono", "acepta_datos"],
     }
@@ -51,13 +51,18 @@ class PedidoForm(TelefonoMixin, forms.ModelForm):
 
     class Meta:
         model = Cotizacion
-        fields = ["nombre_perro", "fecha_cumple", "receta", "estilo", "nombre_cliente", "telefono"]
+        fields = ["nombre_perro", "fecha_cumple", "receta", "nota_familia", "estilo", "nombre_cliente", "telefono"]
         widgets = {
             "nombre_perro": forms.TextInput(
                 attrs={"class": INPUT, "placeholder": "Ej.: Rocky", "autocomplete": "off", "spellcheck": "false"}
             ),
             "fecha_cumple": forms.DateInput(
                 format="%Y-%m-%d", attrs={"class": INPUT, "type": "date"}
+            ),
+            # Spec 010: opcional. Lo ve el equipo en la tarjeta del pedido y en la ficha del perrito.
+            "nota_familia": forms.Textarea(
+                attrs={"class": INPUT, "rows": 3, "maxlength": 300,
+                       "placeholder": "Ej.: No tolera la lactosa. Le encanta la zanahoria."}
             ),
             "nombre_cliente": forms.TextInput(
                 attrs={"class": INPUT, "placeholder": "Ej.: Ana", "autocomplete": "name"}
@@ -72,7 +77,11 @@ class PedidoForm(TelefonoMixin, forms.ModelForm):
                 }
             ),
         }
-        help_texts = {"fecha_cumple": "El día en que necesitas el pastel."}
+        labels = {"nota_familia": "¿Algo que debamos saber? (opcional)"}
+        help_texts = {
+            "fecha_cumple": "El día en que necesitas el pastel.",
+            "nota_familia": "Alergias, algo que no pueda comer o algo que le encante.",
+        }
         error_messages = {
             "nombre_perro": {"required": "¿Cómo se llama tu perrito?"},
             "fecha_cumple": {"required": "Indícanos el día de la celebración."},

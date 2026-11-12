@@ -29,6 +29,21 @@
       </button>
     </div>
 
+  {% elif chat_tipo == "opcional" %}
+    {# Spec 010: lo que la familia nos cuenta del perrito. Se puede saltar. #}
+    <div class="flex items-center gap-2">
+      <label for="chat-respuesta" class="sr-only">{{ chat_etiqueta }}</label>
+      <input id="chat-respuesta" name="{{ chat_campo }}" type="text" maxlength="300" autocomplete="off"
+             placeholder="Ej.: No tolera la lactosa"
+             class="min-w-0 flex-1 rounded-full border border-stone-300 bg-white px-4 py-2.5 text-slate-900 placeholder:text-stone-400 focus:border-collar-600 focus:outline-none focus:ring-4 focus:ring-collar-600/15">
+      <button type="submit" aria-label="Enviar respuesta"
+              class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-collar-600 text-white transition hover:bg-collar-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-collar-600/30">
+        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 16V4m0 0-5 5m5-5 5 5"/></svg>
+      </button>
+    </div>
+    <button type="submit" name="nada" value="1"
+            class="mt-2 w-full rounded-full border-2 border-collar-600 px-4 py-2.5 text-sm font-bold text-collar-700 transition hover:bg-collar-600 hover:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-collar-600/30">Nada que agregar</button>
+
   {% elif chat_tipo == "opciones" %}
     <div class="grid gap-2" role="group" aria-label="{% if chat_campo == 'receta' %}Elige la receta{% else %}Elige la forma{% endif %}">
       {% for valor, etiqueta in chat_opciones %}

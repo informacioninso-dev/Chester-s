@@ -1,4 +1,5 @@
 import datetime
+import unicodedata
 
 from django.conf import settings
 from django.core.validators import RegexValidator
@@ -37,10 +38,85 @@ def whatsapp_internacional(telefono):
     return digitos
 
 
+def clave_nombre(nombre):
+    """'  Rocky Bálboa ' -> 'rocky balboa': sin mayúsculas, tildes ni espacios de más."""
+    sin_tildes = unicodedata.normalize("NFKD", nombre or "")
+    sin_tildes = "".join(c for c in sin_tildes if not unicodedata.combining(c))
+    return " ".join(sin_tildes.lower().split())
+
+
 class ConWhatsAppCliente:
     @property
     def url_whatsapp_cliente(self):
         return f"https://wa.me/{whatsapp_internacional(self.telefono)}"
+
+
+class Tamano(models.TextChoices):
+    PEQUENO = "pequeno", "Pequeño"
+    MEDIANO = "mediano", "Mediano"
+    GRANDE = "grande", "Grande"
+
+
+class Perrito(ConWhatsAppCliente, models.Model):
+    """Ficha de cada perrito (spec 010): junta sus pedidos y su cumpleaños, y lo que sabemos de él.
+
+    Mismo WhatsApp + mismo nombre (sin mayúsculas, tildes ni espacios) = mismo perrito.
+    """
+
+    nombre = models.CharField("nombre", max_length=80)
+    nombre_clave = models.CharField(max_length=80, editable=False)
+    telefono = models.CharField("WhatsApp", max_length=20)
+    telefono_clave = models.CharField(max_length=20, editable=False)
+    familia = models.CharField("familia", max_length=120, blank=True)
+    raza = models.CharField("raza", max_length=60, blank=True)
+    tamano = models.CharField("tamaño", max_length=10, choices=Tamano.choices, blank=True)
+    le_encanta = models.TextField("le encanta", blank=True, max_length=500)
+    no_le_gusta = models.TextField("no le gusta / alergias", blank=True, max_length=500)
+    notas = models.TextField("notas", blank=True, max_length=1000)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["nombre"]
+        verbose_name = "perrito"
+        verbose_name_plural = "perritos"
+        constraints = [
+            models.UniqueConstraint(fields=["telefono_clave", "nombre_clave"], name="perrito_unico_por_familia"),
+        ]
+
+    def __str__(self):
+        return f"{self.nombre} ({self.familia or self.telefono})"
+
+    @classmethod
+    def de(cls, telefono, nombre, familia=""):
+        """Ficha del perrito de ese WhatsApp con ese nombre; la crea si no existe."""
+        perrito, creado = cls.objects.get_or_create(
+            telefono_clave=whatsapp_internacional(telefono),
+            nombre_clave=clave_nombre(nombre),
+            defaults={"nombre": " ".join((nombre or "").split()), "telefono": telefono, "familia": familia},
+        )
+        if not creado and familia and not perrito.familia:
+            perrito.familia = familia
+            perrito.save(update_fields=["familia", "actualizado_en"])
+        return perrito
+
+
+class ConFichaDePerrito(models.Model):
+    """Pedidos y cumpleaños se enlazan solos a la ficha de su perrito al guardarse."""
+
+    perrito = models.ForeignKey(Perrito, null=True, blank=True, on_delete=models.SET_NULL,
+                                related_name="%(class)s_set", verbose_name="ficha del perrito")
+
+    class Meta:
+        abstract = True
+
+    def nombre_familia(self):
+        raise NotImplementedError
+
+    def save(self, *args, **kwargs):
+        if self.perrito_id is None and self.telefono and self.nombre_perro:
+            self.perrito = Perrito.de(self.telefono, self.nombre_perro, self.nombre_familia())
+        super().save(*args, **kwargs)
 
 
 class SincronizableCRM(models.Model):
@@ -65,7 +141,7 @@ class SincronizableCRM(models.Model):
         self.save(update_fields=["sincronizado_crm", "sincronizado_en"])
 
 
-class Cotizacion(ConWhatsAppCliente, SincronizableCRM):
+class Cotizacion(ConWhatsAppCliente, ConFichaDePerrito, SincronizableCRM):
     """Pedido armado en el configurador y enviado a Melloco por WhatsApp."""
 
     nombre_cliente = models.CharField("nombre del cliente", max_length=120)
@@ -79,6 +155,12 @@ class Cotizacion(ConWhatsAppCliente, SincronizableCRM):
     estado = models.CharField(
         max_length=20, choices=EstadoPedido.choices, default=EstadoPedido.NUEVO, db_index=True
     )
+    # Spec 010: lo que la familia nos contó al pedir (alergias, gustos). Opcional.
+    nota_familia = models.TextField("lo que nos contó la familia", blank=True, max_length=300)
+    cocinero = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                                 related_name="pedidos_en_cocina", verbose_name="lo cocina")
+    repartidor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                                   related_name="pedidos_en_reparto", verbose_name="lo reparte")
 
     class Meta:
         ordering = ["-creado_en"]
@@ -87,6 +169,9 @@ class Cotizacion(ConWhatsAppCliente, SincronizableCRM):
 
     def __str__(self):
         return f"{self.nombre_perro} · {self.get_receta_display()} ({self.fecha_cumple:%d/%m/%Y})"
+
+    def nombre_familia(self):
+        return self.nombre_cliente
 
     def to_crm(self):
         return {
@@ -102,11 +187,12 @@ class Cotizacion(ConWhatsAppCliente, SincronizableCRM):
             "estilo_nombre": self.get_estilo_display(),
             "estado": self.estado,
             "estado_nombre": self.get_estado_display(),
+            "nota_familia": self.nota_familia,
             "creado_en": self.creado_en.isoformat(),
         }
 
 
-class LeadCumple(ConWhatsAppCliente, SincronizableCRM):
+class LeadCumple(ConWhatsAppCliente, ConFichaDePerrito, SincronizableCRM):
     """Registro de 'La Ruleta de Melloco': regalo sorpresa antes del cumpleaños."""
 
     nombre_humano = models.CharField("nombre del humano", max_length=120)
@@ -125,6 +211,9 @@ class LeadCumple(ConWhatsAppCliente, SincronizableCRM):
 
     def __str__(self):
         return f"{self.nombre_perro} ({self.nombre_humano})"
+
+    def nombre_familia(self):
+        return self.nombre_humano
 
     def proximo_cumple(self, hoy=None):
         """Próxima fecha en que se celebra el cumpleaños (hoy cuenta)."""

@@ -82,6 +82,12 @@
       </div>
       {% if errores.receta %}<p id="error-receta" class="mt-3 text-sm font-semibold text-collar-700">{{ errores.receta.0 }}</p>{% endif %}
     </fieldset>
+    {# Spec 010: opcional. Lo ve la familia de Chester en la tarjeta del pedido y en la ficha del perrito. #}
+    <div class="mt-8">
+      <label for="{{ form.nota_familia.id_for_label }}" class="mb-2 block text-sm font-bold">{{ form.nota_familia.label }}</label>
+      {{ form.nota_familia }}
+      <p id="{{ form.nota_familia.auto_id }}_helptext" class="mt-2 text-sm text-slate-500">{{ form.nota_familia.help_text }}</p>
+    </div>
 
   {# ── Paso 3: Forma ── #}
   {% elif paso == 3 %}
@@ -133,6 +139,7 @@
       <div class="min-w-0"><dt class="text-slate-500">Celebración</dt><dd class="mt-1 font-bold">{{ resumen.fecha }}</dd></div>
       <div class="min-w-0"><dt class="text-slate-500">Receta</dt><dd class="mt-1 font-bold">{{ resumen.receta }}</dd></div>
       <div class="min-w-0"><dt class="text-slate-500">Forma</dt><dd class="mt-1 font-bold">{{ resumen.estilo }}</dd></div>
+      {% if resumen.nota %}<div class="col-span-full min-w-0"><dt class="text-slate-500">Nos contaste</dt><dd class="mt-1 whitespace-pre-line break-words font-bold">{{ resumen.nota }}</dd></div>{% endif %}
     </dl>
 
     <p class="mt-4 flex items-center gap-3 rounded-2xl bg-crema-50 px-4 py-3 text-sm leading-relaxed text-slate-700">

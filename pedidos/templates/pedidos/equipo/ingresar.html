@@ -1,0 +1,30 @@
+{% extends "pedidos/equipo/base.html" %}{% load static %}
+{% block titulo %}Ingresar{% endblock %}
+{% block cabecera %}{% endblock %}
+{% block contenido %}
+<div class="mx-auto mt-10 max-w-sm sm:mt-20">
+  <div class="text-center">
+    <img src="{% static 'pedidos/img/melloco.svg' %}" alt="" width="96" height="96" class="mx-auto h-24 w-24 rounded-full bg-crema-50 ring-4 ring-collar-600">
+    <h1 class="mt-6 font-display text-3xl font-medium tracking-tight">Equipo de <span translate="no">Chester’s</span></h1>
+    <p class="mt-2 text-slate-600">Entra para ver los pedidos y a los perritos que los esperan.</p>
+  </div>
+
+  <form method="post" class="mt-8 space-y-5 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    {% if form.non_field_errors %}
+      <p role="alert" class="rounded-2xl bg-collar-50 px-4 py-3 text-sm font-semibold text-collar-800">Usuario o contraseña incorrectos. Revisa mayúsculas y vuelve a intentarlo.</p>
+    {% endif %}
+    <div>
+      <label for="{{ form.username.id_for_label }}" class="mb-2 block text-sm font-bold">Usuario</label>
+      {{ form.username }}
+    </div>
+    <div>
+      <label for="{{ form.password.id_for_label }}" class="mb-2 block text-sm font-bold">Contraseña</label>
+      {{ form.password }}
+    </div>
+    <button type="submit" class="min-h-12 w-full rounded-full bg-slate-900 px-6 py-3 font-extrabold text-white transition hover:bg-slate-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/30">Entrar</button>
+  </form>
+  <p class="mt-6 text-center text-sm text-slate-500">¿Olvidaste tu contraseña? Pídele al administrador que te la cambie.</p>
+</div>
+{% endblock %}

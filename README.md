@@ -17,12 +17,22 @@ Abrir http://127.0.0.1:8000 · Panel de Melloco: http://127.0.0.1:8000/admin
 
 Tests: `python manage.py test pedidos`
 
-## Panel y equipo
+## Gestor del equipo y panel
 
-1. **Administrador** (una sola vez): `python manage.py createsuperuser`. Tiene acceso total, incluido crear usuarios.
-2. **Personas del equipo**: el administrador entra a `/admin/` → *Usuarios* → *Añadir usuario*, pone usuario y contraseña, y en la siguiente pantalla marca **Es staff** y agrega el grupo **Atención de pedidos**.
+**El equipo trabaja en `/equipo/`** (spec 010), pensado para el celular:
 
-Con ese grupo pueden ver y editar pedidos y cumpleaños, pero no borrarlos ni gestionar usuarios. En la lista de *Cotizaciones* cambian el estado (Nuevo → Confirmado → En preparación → Entregado, o Cancelado) directamente en la tabla y le escriben al cliente con *Escribir por WhatsApp*. En *Leads de cumpleaños* marcan **Regalo enviado** y filtran los que faltan.
+- **Pedidos:** van en tarjetas por fecha de celebración y cada tarjeta empieza por el perrito, con sus alergias en rojo, lo que contó la familia y lo que le encanta. Desde ahí se avanza el estado (Confirmar pedido → Pasar a cocina → Marcar entregado), se elige quién lo cocina y quién lo reparte, y se escribe a la familia por WhatsApp. La pestaña *Míos* muestra los pedidos asignados a cada quien.
+- **Ficha del perrito:** junta sus pedidos y su cumpleaños de la Ruleta y muestra sus favoritas. El equipo anota en ella raza, tamaño, lo que le encanta, alergias y notas.
+
+**Usuarios** (los crea el administrador):
+
+1. **Administrador** (una sola vez): `python manage.py createsuperuser`. Tiene acceso total en `/admin/` y en `/equipo/`.
+2. **Cada persona:** en `/admin/` → *Usuarios* → *Añadir usuario* se pone su usuario y contraseña, y en la pantalla siguiente se escribe su nombre (es el que aparece en el gestor) y se le asigna un grupo:
+   - **Atención de pedidos:** gestor completo. Si además se marca **Es staff**, entra también a `/admin/` para ver y editar pedidos, cumpleaños y fichas, sin poder borrar ni gestionar usuarios.
+   - **Cocina:** aparece en "Lo cocina".
+   - **Reparto:** aparece en "Lo reparte".
+
+`/admin/` queda para el administrador: usuarios, correcciones y el historial de cambios. Ahí se ve quién avanzó o asignó cada pedido desde el gestor.
 
 ## Variables de entorno
 

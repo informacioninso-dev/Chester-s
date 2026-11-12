@@ -518,9 +518,18 @@ class ChatTests(TestCase):
         base = {"nombre_perro": "Rocky", "fecha_cumple": "2099-12-15"}
         r = self.responder("receta", "carne_pure", **base)
         self.assertContains(r, "Carne y puré")
-        self.assertContains(r, 'name="estilo" value="huesito"')
+        # Spec 010: pregunta opcional por alergias y gustos, que se puede saltar.
+        self.assertContains(r, "¿hay algo que debamos saber de Rocky?")
+        self.assertContains(r, 'name="campo" value="nota_familia"')
+        self.assertContains(r, "Nada que agregar")
 
         base["receta"] = "carne_pure"
+        r = self.responder("nota_familia", "", nada="1", **base)
+        self.assertContains(r, "<span class=\"sr-only\">Tú: </span>Nada que agregar", html=False)
+        self.assertContains(r, 'name="estilo" value="huesito"')
+        self.assertContains(r, '<input type="hidden" name="nota_respondida" value="1">', html=False)
+
+        base["nota_respondida"] = "1"
         r = self.responder("estilo", "redondo", **base)
         self.assertContains(r, "¿Y tú cómo te llamas?")
 
@@ -558,7 +567,8 @@ class ChatTests(TestCase):
     @override_settings(CHESTERS_WHATSAPP="593991112233")
     def test_confirmar_guarda_y_abre_whatsapp_con_el_mismo_mensaje(self):
         with mock.patch("pedidos.views.notificar_binn") as notificar:
-            r = self.responder("acepta_datos", "on", **{k: v for k, v in PEDIDO.items() if k not in ("paso", "acepta_datos")})
+            r = self.responder("acepta_datos", "on", nota_respondida="1",
+                               **{k: v for k, v in PEDIDO.items() if k not in ("paso", "acepta_datos")})
         self.assertEqual(r.status_code, 200)
         c = Cotizacion.objects.get()
         self.assertEqual((c.nombre_perro, c.telefono, c.receta), ("Rocky", "0991234567", "carne_pure"))
@@ -579,7 +589,7 @@ class ChatTests(TestCase):
 
     def test_campo_trampa_no_guarda(self):
         datos = {k: v for k, v in PEDIDO.items() if k not in ("paso", "acepta_datos")}
-        r = self.responder("acepta_datos", "on", sitio_web="spam", **datos)
+        r = self.responder("acepta_datos", "on", sitio_web="spam", nota_respondida="1", **datos)
         self.assertTrue(enlace_whatsapp(r).startswith("https://wa.me/"))
         self.assertEqual(Cotizacion.objects.count(), 0)
 
@@ -587,7 +597,7 @@ class ChatTests(TestCase):
     def test_comparte_el_limite_con_el_configurador(self):
         self.client.post(reverse("pedidos:confirmar"), PEDIDO, **HTMX)
         datos = {k: v for k, v in PEDIDO.items() if k not in ("paso", "acepta_datos")}
-        r = self.responder("acepta_datos", "on", **datos)
+        r = self.responder("acepta_datos", "on", nota_respondida="1", **datos)
         self.assertEqual(r.status_code, 429)
         self.assertContains(r, "Recibí varios pedidos seguidos", status_code=429)
         self.assertEqual(Cotizacion.objects.count(), 1)
@@ -621,7 +631,8 @@ class EquipoYGestionTests(TestCase):
     def test_grupo_con_permisos_justos(self):
         from django.contrib.auth.models import Group
         permisos = set(Group.objects.get(name="Atención de pedidos").permissions.values_list("codename", flat=True))
-        self.assertEqual(permisos, {"view_cotizacion", "change_cotizacion", "view_leadcumple", "change_leadcumple"})
+        self.assertEqual(permisos, {"view_cotizacion", "change_cotizacion", "view_leadcumple", "change_leadcumple",
+                                    "view_perrito", "change_perrito"})  # fichas: spec 010
 
     def test_el_equipo_ve_y_edita_pero_no_borra_ni_gestiona_usuarios(self):
         self.assertEqual(self.client.get(reverse("admin:pedidos_cotizacion_changelist")).status_code, 200)
@@ -731,3 +742,270 @@ class PasoAWhatsAppTests(TestCase):
         boton = re.search(r'<button type="button" id="chat-abrir"[^>]*class="([^"]+)"', html_portada, re.S)
         self.assertIn("bg-slate-900", boton.group(1))
         self.assertNotIn("bg-collar-600", boton.group(1))
+
+
+# ---------------------------------------------------------------------------
+# Spec 010 · Gestor de pedidos y ficha del perrito
+# ---------------------------------------------------------------------------
+
+from django.contrib.admin.models import LogEntry  # noqa: E402
+from django.contrib.auth.models import Group, User  # noqa: E402
+
+from .models import Perrito  # noqa: E402
+from .views_equipo import _cuando  # noqa: E402
+
+
+def persona(usuario, *grupos, **extra):
+    u = User.objects.create_user(usuario, password="clave-segura-123", **extra)
+    for g in grupos:
+        u.groups.add(Group.objects.get(name=g))
+    return u
+
+
+def pedido(nombre="Rocky", dias=5, estado="nuevo", telefono="0991234567", **extra):
+    datos = {"nombre_cliente": "Ana", "telefono": telefono, "nombre_perro": nombre,
+             "fecha_cumple": timezone.localdate() + datetime.timedelta(days=dias),
+             "receta": "carne_pure", "estilo": "huesito", "estado": estado, **extra}
+    return Cotizacion.objects.create(**datos)
+
+
+class GestorAccesoTests(TestCase):
+    url = reverse("pedidos:equipo")
+
+    def test_pide_iniciar_sesion_con_la_marca(self):
+        r = self.client.get(self.url)
+        self.assertRedirects(r, f"{reverse('pedidos:equipo_ingresar')}?next={self.url}")
+        r = self.client.get(reverse("pedidos:equipo_ingresar"))
+        self.assertContains(r, 'Equipo de <span translate="no">Chester’s</span>', html=False)
+        self.assertContains(r, 'name="robots" content="noindex, nofollow"')
+
+    def test_entran_solo_el_equipo_y_el_superusuario(self):
+        self.assertTrue(Group.objects.filter(name="Cocina").exists())
+        self.assertTrue(Group.objects.filter(name="Reparto").exists())
+        self.client.force_login(persona("extrano"))
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, 403)
+        self.assertContains(r, "No tienes acceso al gestor", status_code=403)
+        for usuario, grupo in (("ana", "Atención de pedidos"), ("chef", "Cocina"), ("moto", "Reparto")):
+            self.client.force_login(persona(usuario, grupo))
+            self.assertEqual(self.client.get(self.url).status_code, 200, grupo)
+        self.client.force_login(persona("jefe", is_superuser=True))
+        self.assertEqual(self.client.get(self.url).status_code, 200)
+
+    def test_ingresar_y_salir(self):
+        persona("chef", "Cocina")
+        r = self.client.post(reverse("pedidos:equipo_ingresar"), {"username": "chef", "password": "clave-segura-123"})
+        self.assertRedirects(r, self.url)
+        r = self.client.post(reverse("pedidos:equipo_salir"))
+        self.assertRedirects(r, reverse("pedidos:equipo_ingresar"))
+        self.assertEqual(self.client.get(self.url).status_code, 302)
+
+    def test_no_se_indexa(self):
+        self.assertContains(self.client.get(reverse("robots")), "Disallow: /equipo/")
+
+
+class GestorPedidosTests(TestCase):
+    url = reverse("pedidos:equipo")
+
+    def setUp(self):
+        self.yo = persona("ana", "Atención de pedidos")
+        self.client.force_login(self.yo)
+
+    def test_activos_con_la_celebracion_mas_cercana_primero_y_contadores(self):
+        pedido("Lejano", dias=20)
+        pedido("Cercano", dias=2, estado="confirmado")
+        pedido("Entregado", dias=1, estado="entregado")
+        html = self.client.get(self.url).content.decode()
+        self.assertLess(html.index("Para Cercano"), html.index("Para Lejano"))
+        self.assertNotIn("Para Entregado", html)
+        self.assertRegex(html, r"Activos\s*<span[^>]*>2</span>")
+        self.assertRegex(html, r"Entregados\s*<span[^>]*>1</span>")
+        self.assertContains(self.client.get(self.url, {"ver": "entregado"}), "Para Entregado")
+
+    def test_la_tarjeta_empieza_por_el_perrito_y_destaca_sus_alergias(self):
+        p = pedido(nota_familia="Le encanta la zanahoria")
+        p.perrito.no_le_gusta = "Alérgico al pollo"
+        p.perrito.le_encanta = "Los huesitos"
+        p.perrito.save()
+        html = self.client.get(self.url).content.decode()
+        self.assertLess(html.index("Para Rocky"), html.index("Alérgico al pollo"))
+        self.assertLess(html.index("Alérgico al pollo"), html.index("Carne y puré"))
+        self.assertIn("No le gusta / alergias:", html)
+        self.assertIn("Nos contó la familia:", html)
+        self.assertIn("Le encanta la zanahoria", html)
+        self.assertIn("Los huesitos", html)
+        self.assertIn("Familia de Ana", html)
+
+    def test_ayuda_de_la_fecha(self):
+        hoy = timezone.localdate()
+        casos = {0: "Hoy", 1: "Mañana", 3: "En 3 días", -2: "Atrasado"}
+        for dias, texto in casos.items():
+            p = Cotizacion(fecha_cumple=hoy + datetime.timedelta(days=dias), estado="confirmado")
+            self.assertEqual(_cuando(p, hoy)["texto"], texto)
+        entregado = Cotizacion(fecha_cumple=hoy - datetime.timedelta(days=2), estado="entregado")
+        self.assertEqual(_cuando(entregado, hoy)["texto"], "Hace 2 días")
+
+    def test_avanzar_estado_al_instante_y_queda_quien_lo_hizo(self):
+        p = pedido()
+        self.assertContains(self.client.get(self.url), "Confirmar pedido")
+        r = self.client.post(reverse("pedidos:equipo_estado", args=[p.pk]), {"estado": "confirmado"}, **HTMX)
+        p.refresh_from_db()
+        self.assertEqual(p.estado, "confirmado")
+        self.assertContains(r, "Pasar a cocina")
+        self.assertContains(r, f'id="pedido-{p.pk}"')
+        log = LogEntry.objects.get(object_id=str(p.pk))
+        self.assertEqual(log.user, self.yo)
+        self.assertIn("Nuevo → Confirmado", log.get_change_message())
+
+    def test_no_se_saltan_estados(self):
+        p = pedido()
+        self.client.post(reverse("pedidos:equipo_estado", args=[p.pk]), {"estado": "entregado"}, **HTMX)
+        p.refresh_from_db()
+        self.assertEqual(p.estado, "nuevo")
+
+    def test_cancelar_pide_confirmacion(self):
+        p = pedido()
+        self.assertContains(self.client.get(self.url), 'hx-confirm="¿Cancelar el pedido de Rocky?', html=False)
+        self.client.post(reverse("pedidos:equipo_estado", args=[p.pk]), {"estado": "cancelado"}, **HTMX)
+        p.refresh_from_db()
+        self.assertEqual(p.estado, "cancelado")
+
+    def test_buscador(self):
+        pedido("Rocky")
+        pedido("Luna", telefono="0987654321", nombre_cliente="Pedro")
+        for q in ("luna", "Pedro", "0987654321"):
+            r = self.client.get(self.url, {"q": q})
+            self.assertContains(r, "Para Luna")
+            self.assertNotContains(r, "Para Rocky")
+
+    def test_sin_javascript_vuelve_solo_dentro_del_gestor(self):
+        p = pedido()
+        r = self.client.post(reverse("pedidos:equipo_estado", args=[p.pk]),
+                             {"estado": "confirmado", "volver": "https://otro-sitio.example/"})
+        self.assertRedirects(r, self.url, fetch_redirect_response=False)
+
+
+class GestorAsignacionTests(TestCase):
+    def setUp(self):
+        self.yo = persona("ana", "Atención de pedidos")
+        self.chef = persona("chef", "Cocina", first_name="Carla")
+        self.moto = persona("moto", "Reparto", first_name="Mario")
+        self.client.force_login(self.yo)
+
+    def test_asignar_cocina_y_reparto(self):
+        p = pedido()
+        html = self.client.get(reverse("pedidos:equipo")).content.decode()
+        self.assertIn(">Carla</option>", html)
+        self.assertIn(">Mario</option>", html)
+        url = reverse("pedidos:equipo_asignar", args=[p.pk])
+        r = self.client.post(url, {"cocinero": self.chef.pk, "repartidor": self.moto.pk}, **HTMX)
+        self.assertContains(r, "Asignación guardada")
+        p.refresh_from_db()
+        self.assertEqual((p.cocinero, p.repartidor), (self.chef, self.moto))
+        self.assertEqual(LogEntry.objects.filter(object_id=str(p.pk)).count(), 2)
+        # Alguien que no está en "Cocina" no se puede asignar.
+        self.client.post(url, {"cocinero": self.moto.pk}, **HTMX)
+        p.refresh_from_db()
+        self.assertEqual(p.cocinero, self.chef)
+
+    def test_mis_pedidos(self):
+        pedido("Mio", cocinero=self.chef)
+        pedido("Ajeno")
+        self.client.force_login(self.chef)
+        r = self.client.get(reverse("pedidos:equipo"), {"ver": "mios"})
+        self.assertContains(r, "Para Mio")
+        self.assertNotContains(r, "Para Ajeno")
+
+
+class FichaPerritoTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.client.force_login(persona("ana", "Atención de pedidos"))
+
+    def test_una_sola_ficha_por_perrito(self):
+        a = pedido("Rocky", telefono="0991234567")
+        b = pedido("  rócky ", telefono="593991234567")
+        c = LeadCumple.objects.create(nombre_humano="Ana", nombre_perro="ROCKY", fecha_cumple="2021-03-10",
+                                      telefono="0991234567")
+        otro = pedido("Luna", telefono="0991234567")
+        self.assertEqual(len({a.perrito_id, b.perrito_id, c.perrito_id}), 1)
+        self.assertNotEqual(otro.perrito_id, a.perrito_id)
+        self.assertEqual(Perrito.objects.count(), 2)
+        self.assertEqual(a.perrito.familia, "Ana")
+
+    def test_los_formularios_enlazan_la_ficha_solos(self):
+        self.client.post(reverse("pedidos:confirmar"), PEDIDO, **HTMX)
+        self.client.post(reverse("pedidos:ruleta"), {**LEAD, "nombre_perro": "Rocky"}, **HTMX)
+        self.assertEqual(Perrito.objects.count(), 1)
+        self.assertEqual(Cotizacion.objects.get().perrito, LeadCumple.objects.get().perrito)
+
+    def test_la_ficha_muestra_historial_cumple_y_favoritas(self):
+        pedido(dias=3, receta="manzana_zanahoria_yogur", nota_familia="No tolera la lactosa")
+        pedido(dias=40, receta="manzana_zanahoria_yogur", estilo="redondo")
+        pedido(dias=80, estado="cancelado", estilo="redondo")
+        p = pedido(dias=90)
+        LeadCumple.objects.create(nombre_humano="Ana", nombre_perro="Rocky", fecha_cumple="2021-03-10",
+                                  telefono="0991234567")
+        r = self.client.get(reverse("pedidos:equipo_ficha", args=[p.perrito_id]))
+        self.assertContains(r, "Ficha del perrito")
+        self.assertContains(r, "Familia de Ana")
+        self.assertContains(r, "10 de marzo")
+        self.assertContains(r, "Regalo pendiente")
+        self.assertContains(r, 'Manzana, zanahoria y yogur <span class="font-normal text-stone-300">(2 veces)', html=False)
+        self.assertContains(r, 'Huesito <span class="font-normal text-stone-300">(2 veces)', html=False)
+        self.assertContains(r, "No tolera la lactosa")
+        self.assertContains(r, "Cancelado")
+
+    def test_el_equipo_anota_gustos_y_alergias(self):
+        p = pedido()
+        url = reverse("pedidos:equipo_ficha", args=[p.perrito_id])
+        r = self.client.post(url, {"raza": "Schnauzer", "tamano": "pequeno", "le_encanta": "La zanahoria",
+                                   "no_le_gusta": "Alérgico al pollo", "notas": "Muy tímido"}, **HTMX)
+        self.assertContains(r, "Ficha guardada")
+        self.assertContains(r, 'id="ficha-form"')
+        perrito = Perrito.objects.get()
+        self.assertEqual((perrito.raza, perrito.tamano, perrito.no_le_gusta), ("Schnauzer", "pequeno", "Alérgico al pollo"))
+        self.assertContains(self.client.get(reverse("pedidos:equipo")), "Alérgico al pollo")
+
+
+class NotaFamiliaTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def test_el_configurador_pregunta_y_la_guarda(self):
+        paso2 = self.client.post(reverse("pedidos:configurador"), {**PEDIDO, "paso": 1, "ir_a": 2}, **HTMX)
+        self.assertContains(paso2, "¿Algo que debamos saber? (opcional)")
+        self.assertContains(paso2, 'name="nota_familia"')
+        paso4 = self.client.post(reverse("pedidos:configurador"),
+                                 {**PEDIDO, "nota_familia": "No tolera la lactosa", "paso": 3, "ir_a": 4}, **HTMX)
+        self.assertContains(paso4, "Nos contaste")
+        self.assertContains(paso4, "No tolera la lactosa")
+        self.client.post(reverse("pedidos:confirmar"), {**PEDIDO, "nota_familia": "No tolera la lactosa"}, **HTMX)
+        self.assertEqual(Cotizacion.objects.get().nota_familia, "No tolera la lactosa")
+
+    def test_es_opcional(self):
+        self.client.post(reverse("pedidos:confirmar"), PEDIDO, **HTMX)
+        self.assertEqual(Cotizacion.objects.get().nota_familia, "")
+
+    def test_el_chat_pregunta_y_la_guarda(self):
+        base = {"nombre_perro": "Rocky", "fecha_cumple": "2099-12-15", "receta": "carne_pure"}
+        r = self.client.post(reverse("pedidos:chat"),
+                             {"campo": "nota_familia", "nota_familia": "Alérgico al pollo", **base}, **HTMX)
+        self.assertContains(r, "Alérgico al pollo")
+        self.assertContains(r, 'name="estilo" value="huesito"')
+        datos = {k: v for k, v in PEDIDO.items() if k not in ("paso", "acepta_datos")}
+        r = self.client.post(reverse("pedidos:chat"), {"campo": "telefono", "nota_respondida": "1",
+                                                       "nota_familia": "Alérgico al pollo", **datos}, **HTMX)
+        self.assertContains(r, "Nos contaste")
+        self.client.post(reverse("pedidos:chat"), {"campo": "acepta_datos", "acepta_datos": "on",
+                                                   "nota_respondida": "1", "nota_familia": "Alérgico al pollo",
+                                                   **datos}, **HTMX)
+        self.assertEqual(Cotizacion.objects.get().nota_familia, "Alérgico al pollo")
+
+    def test_viaja_a_binn_con_el_pedido(self):
+        self.assertEqual(pedido(nota_familia="Sin pollo").to_crm()["nota_familia"], "Sin pollo")
+
+    def test_la_politica_de_privacidad_lo_explica(self):
+        r = self.client.get(reverse("pedidos:privacidad"))
+        self.assertContains(r, "La ficha de tu perrito")
+        self.assertContains(r, "se borra junto con tus demás datos")

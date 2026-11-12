@@ -42,6 +42,8 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 
 - 2026-11-12 · La demo vive en el droplet de Licitar (spec 008), en la red `licitar_default`. El servicio de Docker se llama `chesters`, **nunca `web`**: ese es el nombre del de Licitar en la misma red, y con dos `web` Caddy le mandaba a Chester’s parte del tráfico de licitar.binnso.com (Licitar dio 400 a ratos entre las 08:59 y las 09:40 del 12-nov).
 - 2026-11-12 · El botón "Pedir con Melloco" se ve **siempre** (spec 009, reemplaza lo de la 005 y la 007 que lo escondían): completo en la portada y la historia, compacto (solo la carita) sobre los formularios — decisión del dueño: el chat es la forma más cómoda de pedir desde el teléfono.
+- 2026-11-12 · Gestor del equipo en `/equipo/` (spec 010). Cada tarjeta empieza por el perrito y sus alergias, no por el trámite: "cada pastel se hace con cariño para alguien" es la parte humana del negocio (dueño). La gestión interna se limita a estados, cocina y reparto; el dueño pidió no agregar más por ahora. `/admin/` queda para el administrador.
+- 2026-11-12 · La ficha del perrito se identifica por WhatsApp (formato 593…) + nombre sin tildes ni mayúsculas. Se aceptó que una familia con dos perritos del mismo nombre comparta ficha.
 
 ## Pendientes conocidos
 

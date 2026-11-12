@@ -1,0 +1,46 @@
+{% extends "pedidos/equipo/base.html" %}
+{% block titulo %}Pedidos{% endblock %}
+{% block contenido %}
+<div class="flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <h1 class="font-display text-3xl font-medium tracking-tight">Pedidos</h1>
+    <p class="mt-1 text-sm text-slate-600">Cada pastel es para alguien: mira a quién antes de empezar.</p>
+  </div>
+</div>
+
+<form method="get" role="search" class="mt-5 flex gap-2">
+  <input type="hidden" name="ver" value="{{ pestana }}">
+  <label for="buscar" class="sr-only">Buscar por perrito, familia o teléfono</label>
+  <input id="buscar" type="search" name="q" value="{{ busqueda }}" placeholder="Buscar perrito, familia o teléfono…" autocomplete="off"
+         class="min-w-0 flex-1 rounded-full border border-stone-300 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-stone-400 focus:border-collar-600 focus:outline-none focus:ring-4 focus:ring-collar-600/15">
+  <button type="submit" class="min-h-11 shrink-0 rounded-full bg-slate-900 px-5 text-sm font-bold text-white transition hover:bg-slate-700">Buscar</button>
+</form>
+
+<nav aria-label="Estados" class="-mx-4 mt-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+  <ul class="flex w-max gap-2 pb-1">
+    {% for t in pestanas %}
+      <li>
+        <a href="?ver={{ t.clave }}{% if busqueda %}&amp;q={{ busqueda|urlencode }}{% endif %}" {% if t.actual %}aria-current="page"{% endif %}
+           class="inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-bold transition {% if t.actual %}bg-slate-900 text-white{% else %}bg-white text-slate-700 ring-1 ring-stone-200 hover:ring-slate-400{% endif %}">
+          {{ t.nombre }}
+          <span class="rounded-full px-2 py-0.5 text-xs {% if t.actual %}bg-white/15{% else %}bg-stone-100{% endif %}">{{ t.total }}</span>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+</nav>
+
+{% if busqueda %}
+  <p class="mt-4 text-sm text-slate-600">Resultados para “{{ busqueda }}”. <a href="?ver={{ pestana }}" class="font-bold underline underline-offset-2">Quitar búsqueda</a></p>
+{% endif %}
+
+<div class="mt-5 space-y-4">
+  {% for t in tarjetas %}
+    {% include "pedidos/equipo/tarjeta_pedido.html" with p=t.p cuando=t.cuando siguiente=t.siguiente cocina=t.cocina reparto=t.reparto %}
+  {% empty %}
+    <div class="rounded-3xl border border-dashed border-stone-300 px-6 py-12 text-center text-slate-600">
+      {% if pestana == "mios" %}No tienes pedidos asignados por ahora.{% elif busqueda %}No encontramos pedidos con esa búsqueda.{% else %}No hay pedidos en esta pestaña.{% endif %}
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

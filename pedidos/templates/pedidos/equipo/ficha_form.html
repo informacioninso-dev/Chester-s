@@ -1,0 +1,35 @@
+{# Lo que el equipo sabe del perrito (spec 010). Se guarda sin recargar y se reemplaza a sí mismo. #}
+<form id="ficha-form" method="post" action="{% url 'pedidos:equipo_ficha' perrito.pk %}"
+      hx-post="{% url 'pedidos:equipo_ficha' perrito.pk %}" hx-target="this" hx-swap="outerHTML"
+      class="mt-4 space-y-5 rounded-3xl border border-stone-200 bg-white p-5 sm:p-6">
+  {% csrf_token %}
+  <div class="grid gap-5 sm:grid-cols-2">
+    <div>
+      <label for="{{ form.raza.id_for_label }}" class="mb-2 block text-sm font-bold">Raza</label>
+      {{ form.raza }}
+    </div>
+    <div>
+      <label for="{{ form.tamano.id_for_label }}" class="mb-2 block text-sm font-bold">Tamaño</label>
+      {{ form.tamano }}
+    </div>
+  </div>
+  <div>
+    <label for="{{ form.no_le_gusta.id_for_label }}" class="mb-2 block text-sm font-bold text-collar-700">No le gusta / alergias</label>
+    {{ form.no_le_gusta }}
+  </div>
+  <div>
+    <label for="{{ form.le_encanta.id_for_label }}" class="mb-2 block text-sm font-bold">Le encanta</label>
+    {{ form.le_encanta }}
+  </div>
+  <div>
+    <label for="{{ form.notas.id_for_label }}" class="mb-2 block text-sm font-bold">Notas</label>
+    {{ form.notas }}
+  </div>
+  {% if form.errors %}<p role="alert" class="text-sm font-semibold text-collar-700">Revisa los campos: hay textos demasiado largos.</p>{% endif %}
+  <div class="flex flex-wrap items-center gap-4">
+    <button type="submit" class="min-h-11 rounded-full bg-slate-900 px-6 text-sm font-extrabold text-white transition hover:bg-slate-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/30">
+      <span class="en-reposo">Guardar ficha</span><span class="al-enviar">Guardando…</span>
+    </button>
+    {% if guardado %}<p role="status" class="text-sm font-semibold text-slate-600">Ficha guardada ✓</p>{% endif %}
+  </div>
+</form>

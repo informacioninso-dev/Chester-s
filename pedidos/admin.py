@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Cotizacion, LeadCumple
+from .models import Cotizacion, LeadCumple, Perrito
 
 
 class WhatsAppClienteMixin:
@@ -19,10 +19,11 @@ class CotizacionAdmin(WhatsAppClienteMixin, admin.ModelAdmin):
                     "telefono", "escribir_whatsapp", "sincronizado_crm", "creado_en")
     list_display_links = ("nombre_perro",)
     list_editable = ("estado",)
-    list_filter = ("estado", "receta", "estilo", "sincronizado_crm", "fecha_cumple")
+    list_filter = ("estado", "receta", "estilo", "cocinero", "repartidor", "sincronizado_crm", "fecha_cumple")
     search_fields = ("nombre_perro", "nombre_cliente", "telefono")
     date_hierarchy = "fecha_cumple"
     readonly_fields = ("creado_en", "consentimiento_en", "sincronizado_crm", "sincronizado_en")
+    autocomplete_fields = ("perrito",)
 
 
 @admin.register(LeadCumple)
@@ -35,6 +36,18 @@ class LeadCumpleAdmin(WhatsAppClienteMixin, admin.ModelAdmin):
     search_fields = ("nombre_perro", "nombre_humano", "telefono")
     readonly_fields = ("creado_en", "consentimiento_en", "sincronizado_crm", "sincronizado_en")
 
+    autocomplete_fields = ("perrito",)
+
     @admin.display(description="enviar regalo el")
     def regalo(self, obj):
         return obj.fecha_regalo()
+
+
+@admin.register(Perrito)
+class PerritoAdmin(WhatsAppClienteMixin, admin.ModelAdmin):
+    """Fichas de los perritos (spec 010). El equipo las edita en /equipo/; aquí, correcciones."""
+
+    list_display = ("nombre", "familia", "telefono", "raza", "tamano", "escribir_whatsapp", "actualizado_en")
+    list_filter = ("tamano",)
+    search_fields = ("nombre", "familia", "telefono")
+    readonly_fields = ("creado_en", "actualizado_en")
