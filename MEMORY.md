@@ -30,6 +30,8 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 
 - 2026-11-11 · Melloco tiene cara: dibujo vectorial (`melloco.svg`) en el estilo de Chester, en la insignia "Aprobado por Melloco", la cabecera del chat y el botón flotante. Se genera con `assets/melloco_svg.py` a partir de la foto de referencia `assets/melloco-original.png`. Es provisional: el dueño quiere cambiarlo más adelante. En "Nuestra historia" no va por ahora — decisión del dueño.
 
+- 2026-11-12 · Voz humana, nada que suene a app o IA — pedido del dueño: "transmitir humanidad". Melloco habla como el perrito de la familia (sin "te ayudo", "en un minuto" ni "¡Buena elección!"), y se dice que del otro lado de WhatsApp responde la familia. Melloco figura como Director de Calidad que revisa cada pastel: insignia de la portada, sello en el paso 4 y resumen del chat.
+
 ## Pendientes conocidos
 
 - Revisar con un abogado el texto de `/privacidad/` (spec 001) y agregar razón social/RUC del responsable.

@@ -1,11 +1,11 @@
 {% load static %}
 <div class="aparecer rounded-[2rem] bg-slate-900 px-6 py-12 text-center text-white sm:px-12" role="status">
-  <picture><source type="image/webp" srcset="{% static 'pedidos/img/chester-avatar-192.webp' %}"><img src="{% static 'pedidos/img/chester-avatar.jpg' %}" alt="" width="96" height="96" class="mx-auto h-24 w-24 rounded-full ring-4 ring-collar-600"></picture>
+  <img src="{% static 'pedidos/img/melloco.svg' %}" alt="" width="96" height="96" class="mx-auto h-24 w-24 rounded-full ring-4 ring-collar-600">
   <h3 data-foco tabindex="-1" class="mt-6 text-balance font-display text-3xl font-medium tracking-tight focus:outline-none sm:text-4xl">
     ¡Casi listo! Solo falta enviarle el mensaje a Melloco.
   </h3>
   <p class="mx-auto mt-4 max-w-md break-words text-stone-300">
-    Abrimos WhatsApp con el pedido de {{ cotizacion.nombre_perro }} ya escrito: envíalo para confirmarlo. Si no se abre solo, usa el botón.
+    Abrimos WhatsApp con el pedido de {{ cotizacion.nombre_perro }} ya escrito. Envíalo y la familia de Chester y Melloco te responde por ahí para coordinar la entrega. Si no se abre solo, usa el botón.
   </p>
   <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
     <a href="{{ wa_url }}" target="_blank" rel="noopener"

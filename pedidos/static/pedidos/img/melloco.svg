@@ -1,10 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" role="img" aria-labelledby="t">
   <title id="t">Melloco, perrito blanco despeinado con gorro de cumpleaños y collar rojo</title>
-  <!-- Ilustración en el estilo de la de Chester (contorno grueso, colores planos, fondo crema).
-       Generada con un script; para cambios grandes conviene regenerarla. -->
   <rect width="480" height="480" fill="#F2E5D3"/>
-
-  <!-- Pecho y collar -->
   <path d="M90.0 480.0Q75.5 453.8 101.4 437.9Q105.3 409.8 133.9 402.2Q148.1 371.0 182.6 378.4Q208.6 357.3 240.0 370.0Q272.3 351.3 297.4 378.4Q330.6 373.7 346.1 402.2Q381.4 403.7 378.6 437.9Q404.5 453.8 390.0 480.0L390 480L90 480Z" fill="#FFFDF9" stroke="#1E1B18" stroke-width="7" stroke-linejoin="round"/>
   <path d="M138 404C190 432 290 432 342 404L348 430C292 462 188 462 132 430Z" fill="#E2342D" stroke="#1E1B18" stroke-width="7" stroke-linejoin="round"/>
   <path d="M240 436V448" stroke="#1E1B18" stroke-width="5" stroke-linecap="round"/>
@@ -20,27 +16,19 @@
     <circle cx="258" cy="452" r="7"/><circle cx="258" cy="466" r="7"/>
     <rect x="221" y="450" width="38" height="18" rx="3"/>
   </g>
-
-  <!-- Orejas (detrás de la cabeza) -->
   <g stroke="#1E1B18" stroke-width="7" stroke-linejoin="round">
     <path d="M170.0 120.0L100.0 112.0L58.0 156.0L48.0 236.0L52.0 290.0L54.0 323.0L68.0 324.0L73.0 345.0L90.0 334.0L94.0 341.0L110.0 316.0L120.0 270.0L124.0 200.0L170.0 150.0Z" fill="#F0DAB6"/>
     <path d="M310.0 120.0L380.0 112.0L422.0 156.0L432.0 236.0L428.0 290.0L426.0 323.0L412.0 324.0L407.0 345.0L390.0 334.0L386.0 341.0L370.0 316.0L360.0 270.0L356.0 200.0L310.0 150.0Z" fill="#F0DAB6"/>
   </g>
   <path d="M100.0 136.0L68.0 176.0L62.0 250.0L74.0 300.0L92.0 306.0L104.0 262.0L106.0 190.0Z" fill="#E3C493"/>
   <path d="M380.0 136.0L412.0 176.0L418.0 250.0L406.0 300.0L388.0 306.0L376.0 262.0L374.0 190.0Z" fill="#E3C493"/>
-
-  <!-- Cabeza despeinada -->
   <path d="M368.0 238.0Q377.4 258.9 357.8 275.8Q397.8 309.5 345.7 311.0Q367.7 346.7 326.3 341.2Q349.0 391.6 301.0 364.4Q304.6 409.0 271.6 379.0Q264.5 437.1 240.0 384.0Q217.2 426.2 208.4 379.0Q178.7 402.5 179.0 364.4Q133.5 388.9 153.7 341.2Q112.3 346.7 134.3 311.0Q78.8 310.7 122.2 275.8Q99.0 259.3 118.0 238.0Q85.8 217.5 116.4 204.4Q101.4 179.9 129.1 173.0Q125.3 148.9 149.5 146.1Q147.4 116.1 176.0 125.4Q183.9 101.0 206.9 112.4Q219.9 83.7 240.0 108.0Q259.4 89.1 273.1 112.4Q299.6 92.5 304.0 125.4Q331.4 117.5 330.5 146.1Q354.7 148.9 350.9 173.0Q380.3 179.3 363.6 204.4Q385.1 218.7 368.0 238.0Z" fill="#FFFDF9" stroke="#1E1B18" stroke-width="7" stroke-linejoin="round"/>
-
-  <!-- Sombras grises del pelo, como la barba de Chester -->
   <path d="M312.0 314.0Q325.8 336.1 295.4 343.0Q308.8 380.9 272.0 364.2Q263.1 396.7 240.0 372.0Q214.6 406.5 208.0 364.2Q174.6 377.2 184.6 343.0Q156.6 335.4 176.0 314.0Q156.6 296.5 177.6 292.0Q183.0 272.9 204.0 275.9Q218.7 255.4 240.0 270.0Q260.7 258.8 276.0 275.9Q300.0 268.0 302.4 292.0Q322.4 297.0 312.0 314.0Z" fill="#EEE8DF"/>
   <g fill="none" stroke="#D2C9BD" stroke-width="4" stroke-linecap="round">
     <path d="M150 240c6 12 8 26 4 40"/><path d="M330 240c-6 12-8 26-4 40"/>
     <path d="M186 356l-4 18"/><path d="M212 366l-2 18"/><path d="M240 370v18"/><path d="M268 366l2 18"/><path d="M294 356l4 18"/>
     <path d="M204 148c10-6 22-8 34-6"/><path d="M262 140c8 0 16 2 22 6"/>
   </g>
-
-  <!-- Ojos -->
   <g fill="#211611" stroke="#1E1B18" stroke-width="3">
     <circle cx="196" cy="252" r="21"/><circle cx="284" cy="252" r="21"/>
   </g>
@@ -48,18 +36,12 @@
     <circle cx="189" cy="244" r="7"/><circle cx="203" cy="260" r="3"/>
     <circle cx="277" cy="244" r="7"/><circle cx="291" cy="260" r="3"/>
   </g>
-
-  <!-- Cejas de pelo -->
   <g fill="#FFFDF9" stroke="#1E1B18" stroke-width="5" stroke-linejoin="round">
     <path d="M226.0 214.0Q215.3 201.3 204.7 212.7Q194.0 200.0 183.3 211.3Q172.7 198.7 162.0 210.0Q166.0 224.0 226.0 226.0Z"/><path d="M254.0 214.0Q264.7 201.3 275.3 212.7Q286.0 200.0 296.7 211.3Q307.3 198.7 318.0 210.0Q314.0 224.0 254.0 226.0Z"/>
   </g>
-
-  <!-- Nariz y boca -->
   <path d="M208 300C208 280 272 280 272 300C272 320 256 332 240 332C224 332 208 320 208 300Z" fill="#3C2522" stroke="#1E1B18" stroke-width="6" stroke-linejoin="round"/>
   <ellipse cx="228" cy="292" rx="11" ry="5.5" fill="#8E6D65"/>
   <path d="M240 332v10M220 342c10 9 30 9 40 0" fill="none" stroke="#1E1B18" stroke-width="5.5" stroke-linecap="round"/>
-
-  <!-- Gorro de cumpleaños, pequeño y ladeado -->
   <path d="M202 106L262 14L292 86Z" fill="#5AA9E6" stroke="#1E1B18" stroke-width="7" stroke-linejoin="round"/>
   <path d="M262 14L292 86L270 90Z" fill="#3E8FD1"/>
   <path d="M202 106L262 14L292 86Z" fill="none" stroke="#1E1B18" stroke-width="7" stroke-linejoin="round"/>

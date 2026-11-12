@@ -11,7 +11,7 @@ Es un chat **guiado**, sin inteligencia artificial: no necesita claves ni tiene 
 
 ## Criterios de aceptación
 
-- [x] La portada tiene un botón flotante "Pedir por chat" que abre y cierra el chat; también se cierra con Esc y el foco va al campo de respuesta.
+- [x] La portada tiene un botón flotante "Pedir con Melloco" que abre y cierra el chat; también se cierra con Esc y el foco va al campo de respuesta.
 - [x] El chat pregunta en orden: nombre del perrito, día de la celebración, receta (botones), forma (botones), nombre de la persona y WhatsApp.
 - [x] Cada respuesta se valida con las mismas reglas del configurador (`PedidoForm`). Si algo está mal, Melloco explica qué corregir y vuelve a preguntar lo mismo.
 - [x] Antes de confirmar, muestra el resumen del pedido y pide la autorización de datos con enlace a la política de privacidad.
@@ -35,4 +35,5 @@ Es un chat **guiado**, sin inteligencia artificial: no necesita claves ni tiene 
 ## Resultado
 
 - 10 tests en `ChatTests` y una prueba de punta a punta en Chrome (390 px y 1280 px): conversación completa, error de fecha pasada, autorización obligatoria, Esc y foco. WhatsApp se abre con el mismo mensaje que el configurador y no hay errores de JavaScript.
+- El botón flotante se esconde mientras el configurador o la Ruleta ocupan el centro de la pantalla: en el celular tapaba el campo de WhatsApp.
 - El chat usa `novalidate`, igual que los otros formularios: los errores los explica Melloco en la conversación, no el navegador.

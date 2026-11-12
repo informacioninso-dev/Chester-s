@@ -371,19 +371,19 @@ LIMITE_CHAT = (
 def _textos_pregunta(campo, datos):
     perro = datos.get("nombre_perro") or "tu perrito"
     if campo == "nombre_perro":
-        return ["¡Guau! Soy Melloco, Director de Calidad de Chester’s 🐾",
-                "Te ayudo a pedir su pastel en un minuto. ¿Cómo se llama tu perrito?"]
+        return ["¡Hola! Soy Melloco, el Director de Calidad de Chester’s 🐾",
+                "Reviso cada pastel antes de que salga de la cocina. Cuéntame, ¿cómo se llama tu perrito?"]
     if campo == "fecha_cumple":
         return [f"¡Qué lindo nombre! ¿Qué día celebran a {perro}?"]
     if campo == "receta":
-        return [f"Tenemos dos recetas caseras, horneadas a pedido. ¿Cuál le va a gustar a {perro}?"]
+        return [f"Tenemos dos recetas caseras y las dos llevan mi aprobación. ¿Cuál crees que le gustará a {perro}?"]
     if campo == "estilo":
-        return ["¡Buena elección! ¿Qué forma prefieres para el pastel?"]
+        return ["¡Esa me encanta! ¿Y qué forma le hacemos?"]
     if campo == "nombre_cliente":
-        return ["Perfecto. ¿Y tú cómo te llamas?"]
+        return ["¿Y tú cómo te llamas?"]
     if campo == "telefono":
         nombre = datos.get("nombre_cliente", "")
-        return [f"Gracias, {nombre}. ¿A qué WhatsApp te escribimos para confirmar?"]
+        return [f"Gracias, {nombre}. ¿A qué WhatsApp te escribimos?"]
     return []  # acepta_datos: se muestra el resumen
 
 
@@ -406,7 +406,7 @@ def _contexto_chat(campo, datos, mensajes, preguntar=True):
         mensajes += [{"de": "melloco", "texto": t} for t in _textos_pregunta(campo, datos)]
     if preguntar and campo == "acepta_datos":
         mensajes += [
-            {"de": "melloco", "texto": "Así queda el pedido:"},
+            {"de": "melloco", "texto": f"Así queda el pedido de {datos.get('nombre_perro', 'tu perrito')}:"},
             {"de": "melloco", "resumen": {
                 "Para": datos.get("nombre_perro", ""),
                 "Fecha": _fecha_legible(datos.get("fecha_cumple")),
@@ -414,7 +414,7 @@ def _contexto_chat(campo, datos, mensajes, preguntar=True):
                 "Forma": dict(Estilo.choices).get(datos.get("estilo"), ""),
                 "WhatsApp": datos.get("telefono", ""),
             }},
-            {"de": "melloco", "texto": "Si todo está bien, autoriza el uso de tus datos y confirma."},
+            {"de": "melloco", "texto": "Antes de que salga, yo mismo lo reviso. Si está todo bien, marca la autorización y confírmalo."},
         ]
     opciones = {"receta": Receta.choices, "estilo": Estilo.choices}.get(campo, [])
     return {
@@ -476,7 +476,7 @@ def chat(request):
                       _contexto_chat("acepta_datos", datos, mensajes, preguntar=False), status=429)
 
     wa_url = url_whatsapp(cotizacion)
-    mensajes.append({"de": "melloco", "texto": "¡Listo! Te abro WhatsApp con el pedido ya escrito: solo tienes que enviarlo."})
+    mensajes.append({"de": "melloco", "texto": "¡Listo! Te abro WhatsApp con el pedido escrito. Envíalo y mi familia te responde por ahí para coordinar la entrega."})
     ctx = _contexto_chat("fin", {}, mensajes, preguntar=False)
     ctx["chat_wa_url"] = wa_url
     respuesta = render(request, "pedidos/partials/chat_paso.html", ctx)

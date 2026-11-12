@@ -109,6 +109,7 @@ class ConfiguradorTests(TestCase):
         self.assertContains(r, "Todo listo para la fiesta")
         self.assertContains(r, "Manzana, zanahoria y yogur")
         self.assertContains(r, 'hx-post="/configurador/confirmar/"')
+        self.assertContains(r, "Bajo el control de calidad de Melloco.")
 
 
 class ConfirmarTests(TestCase):
@@ -144,6 +145,7 @@ class ConfirmarTests(TestCase):
         )
         self.assertContains(r, "¡Casi listo! Solo falta enviarle el mensaje a Melloco.")
         self.assertContains(r, "el pedido de Rocky ya escrito")
+        self.assertContains(r, "te responde por ahí")
 
     def test_sin_consentimiento_no_guarda(self):
         r = self.client.post(self.url, self.datos(acepta_datos=""), **HTMX)
@@ -467,9 +469,9 @@ class ChatTests(TestCase):
     def test_portada_tiene_el_boton_y_el_chat_con_el_saludo(self):
         r = self.client.get(reverse("pedidos:index"))
         self.assertContains(r, 'id="chat-abrir"')
-        self.assertContains(r, "Pedir por chat")
+        self.assertContains(r, "Pedir con Melloco")
         self.assertContains(r, 'role="log"')
-        self.assertContains(r, "¿Cómo se llama tu perrito?")
+        self.assertContains(r, "Cuéntame, ¿cómo se llama tu perrito?")
         self.assertContains(r, 'name="campo" value="nombre_perro"')
 
     def test_empezar_de_nuevo(self):
@@ -508,7 +510,7 @@ class ChatTests(TestCase):
 
         base["nombre_cliente"] = "Ana"
         r = self.responder("telefono", "099 123 4567", **base)
-        self.assertContains(r, "Así queda el pedido:")
+        self.assertContains(r, "Así queda el pedido de Rocky:")
         self.assertContains(r, "<dt class=\"text-slate-500\">Forma</dt>", html=False)
         self.assertContains(r, 'name="acepta_datos"')
         self.assertContains(r, 'href="/privacidad/"')

@@ -3,7 +3,7 @@
 Referencia: assets/melloco-original.png. Uso:
     python assets/melloco_svg.py pedidos/static/pedidos/img/melloco.svg
 """
-import math, sys
+import math, re, sys
 
 INK = "#1E1B18"
 
@@ -148,5 +148,6 @@ svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" role="im
   {"".join(f'<circle cx="{x}" cy="{y}" r="8.5" fill="{c}"/>' for x, y, c in pompones)}
 </svg>
 """
+svg = re.sub(r"\s*<!--.*?-->", "", svg, flags=re.S)  # el archivo publicado va sin comentarios internos
 open(sys.argv[1], "w", encoding="utf-8", newline="\n").write(svg)
 print(len(svg), "bytes")

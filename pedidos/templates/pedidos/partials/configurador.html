@@ -1,4 +1,4 @@
-{# Configurador paso a paso. Se reemplaza dentro de #configurador-panel en cada paso (HTMX). #}
+{% load static %}{# Configurador paso a paso. Se reemplaza dentro de #configurador-panel en cada paso (HTMX). #}
 <form method="post"
       action="{% if paso == 4 %}{% url 'pedidos:confirmar' %}{% else %}{% url 'pedidos:configurador' %}{% endif %}"
       hx-post="{% if paso == 4 %}{% url 'pedidos:confirmar' %}{% else %}{% url 'pedidos:configurador' %}{% endif %}"
@@ -134,6 +134,11 @@
       <div class="min-w-0"><dt class="text-slate-500">Receta</dt><dd class="mt-1 font-bold">{{ resumen.receta }}</dd></div>
       <div class="min-w-0"><dt class="text-slate-500">Forma</dt><dd class="mt-1 font-bold">{{ resumen.estilo }}</dd></div>
     </dl>
+
+    <p class="mt-4 flex items-center gap-3 rounded-2xl bg-crema-50 px-4 py-3 text-sm leading-relaxed text-slate-700">
+      <img src="{% static 'pedidos/img/melloco.svg' %}" alt="" width="40" height="40" class="h-10 w-10 shrink-0 rounded-full">
+      <span><strong class="text-slate-900">Bajo el control de calidad de Melloco.</strong> Horneamos tu pastel a pedido y él lo revisa antes de que salga de la cocina.</span>
+    </p>
 
     <div class="mt-8 grid gap-6 sm:grid-cols-2">
       <div>
