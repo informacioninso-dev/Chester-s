@@ -55,30 +55,9 @@
             <a href="#historia" class="text-sm font-bold text-slate-700 underline decoration-stone-300 underline-offset-4 transition hover:decoration-slate-900">Conoce a Chester</a>
           </div>
 
-          <div class="mt-14 max-w-xl border-t border-stone-200 pt-6">
-            <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-collar-700">Control de calidad Melloco</p>
-            <ul class="mt-4 grid gap-3 text-base">
-              <li class="flex items-start gap-2.5"><span class="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-collar-600 text-white" aria-hidden="true"><svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 10.5 3.2 3L15 6.5"/></svg></span><span><strong class="font-display font-medium">Recetas caseras</strong> <span class="text-slate-500">aprobadas por Melloco</span></span></li>
-              <li class="flex items-start gap-2.5"><span class="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-collar-600 text-white" aria-hidden="true"><svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 10.5 3.2 3L15 6.5"/></svg></span><span><strong class="font-display font-medium">Hecho a pedido</strong> <span class="text-slate-500">para cada cumpleaños</span></span></li>
-              <li class="flex items-start gap-2.5"><span class="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-collar-600 text-white" aria-hidden="true"><svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 10.5 3.2 3L15 6.5"/></svg></span><span><strong class="font-display font-medium">Revisado por él</strong> <span class="text-slate-500">antes de salir de la cocina</span></span></li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="order-1 lg:order-2 lg:col-span-6">
-          <div class="relative mx-auto max-w-sm sm:max-w-md lg:max-w-none">
-            <div class="absolute -inset-3 rotate-3 rounded-[2.75rem] bg-crema-300/60" aria-hidden="true"></div>
-            <div class="relative overflow-hidden rounded-[2.5rem] bg-crema shadow-2xl shadow-stone-400/30 ring-1 ring-black/5">
-              <picture>
-                <source type="image/webp" sizes="(min-width: 1024px) 552px, (min-width: 640px) 448px, 384px"
-                        srcset="{% static 'pedidos/img/logo-640.webp' %} 640w, {% static 'pedidos/img/logo.webp' %} 1000w">
-              <img src="{% static 'pedidos/img/logo.jpg' %}" width="1000" height="914" fetchpriority="high"
-                   alt="Chester, un schnauzer miniatura con collar rojo, frente a su pastel con forma de huesito. Chester’s, pasteles para perritos."
-                   class="w-full">
-              </picture>
-            </div>
+          <div class="mt-14 flex max-w-xl items-center gap-5 border-t border-stone-200 pt-6 sm:gap-7">
             {# Sello de calidad de Melloco: la idea central de la marca. #}
-            <div class="absolute -right-3 -top-6 w-28 rotate-[8deg] sm:-right-8 sm:-top-10 sm:w-40" role="img" aria-label="Sello de calidad: aprobado por Melloco, Director de Calidad">
+            <div class="w-28 shrink-0 -rotate-6 sm:w-32" role="img" aria-label="Sello de calidad: aprobado por Melloco, Director de Calidad">
               <svg viewBox="0 0 200 200" class="w-full drop-shadow-xl" aria-hidden="true">
                 <defs>
                   <path id="sello-arco" d="M28 100a72 72 0 1 1 144 0a72 72 0 1 1-144 0"/>
@@ -95,6 +74,29 @@
                 <circle cx="133" cy="133" r="14" fill="#0F172A" stroke="#FBF6EF" stroke-width="3.5"/>
                 <path d="m126.5 133 5 5 9-10" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
+            </div>
+            <div>
+              <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-collar-700">Control de calidad Melloco</p>
+              <ul class="mt-4 grid gap-3 text-base">
+                <li class="flex items-start gap-2.5"><span class="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-collar-600 text-white" aria-hidden="true"><svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 10.5 3.2 3L15 6.5"/></svg></span><span><strong class="font-display font-medium">Recetas caseras</strong> <span class="text-slate-500">aprobadas por Melloco</span></span></li>
+                <li class="flex items-start gap-2.5"><span class="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-collar-600 text-white" aria-hidden="true"><svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 10.5 3.2 3L15 6.5"/></svg></span><span><strong class="font-display font-medium">Hecho a pedido</strong> <span class="text-slate-500">para cada cumpleaños</span></span></li>
+                <li class="flex items-start gap-2.5"><span class="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-collar-600 text-white" aria-hidden="true"><svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 10.5 3.2 3L15 6.5"/></svg></span><span><strong class="font-display font-medium">Revisado por él</strong> <span class="text-slate-500">antes de salir de la cocina</span></span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="order-1 lg:order-2 lg:col-span-6">
+          <div class="relative mx-auto max-w-sm sm:max-w-md lg:max-w-none">
+            <div class="absolute -inset-3 rotate-3 rounded-[2.75rem] bg-crema-300/60" aria-hidden="true"></div>
+            <div class="relative overflow-hidden rounded-[2.5rem] bg-crema shadow-2xl shadow-stone-400/30 ring-1 ring-black/5">
+              <picture>
+                <source type="image/webp" sizes="(min-width: 1024px) 552px, (min-width: 640px) 448px, 384px"
+                        srcset="{% static 'pedidos/img/logo-640.webp' %} 640w, {% static 'pedidos/img/logo.webp' %} 1000w">
+              <img src="{% static 'pedidos/img/logo.jpg' %}" width="1000" height="914" fetchpriority="high"
+                   alt="Chester, un schnauzer miniatura con collar rojo, frente a su pastel con forma de huesito. Chester’s, pasteles para perritos."
+                   class="w-full">
+              </picture>
             </div>
           </div>
         </div>

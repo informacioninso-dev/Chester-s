@@ -32,7 +32,7 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 
 - 2026-11-12 · Voz humana, nada que suene a app o IA — pedido del dueño: "transmitir humanidad". Melloco habla como el perrito de la familia (sin "te ayudo", "en un minuto" ni "¡Buena elección!"), y se dice que del otro lado de WhatsApp responde la familia. Melloco figura como Director de Calidad que revisa cada pastel: insignia de la portada, sello en el paso 4 y resumen del chat.
 
-- 2026-11-12 · **Estrategia de marketing: todo pastel está aprobado por Melloco, Director de Calidad.** En la portada manda el sello redondo "APROBADO POR MELLOCO · DIRECTOR DE CALIDAD" (arriba a la derecha del logo, sin tapar la marca) y la lista "Control de calidad Melloco" (recetas caseras aprobadas por Melloco, hecho a pedido, revisado por él antes de salir de la cocina). Melloco se dibuja contento (boca abierta, lengua, cabeza ladeada): con la boca cerrada se veía triste. Decisión del dueño.
+- 2026-11-12 · **Estrategia de marketing: todo pastel está aprobado por Melloco, Director de Calidad.** En la portada manda el sello redondo "APROBADO POR MELLOCO · DIRECTOR DE CALIDAD" junto a la lista "Control de calidad Melloco", **nunca sobre el logo de Chester**: el perrito original es el protagonista de la marca. La lista dice: recetas caseras aprobadas por Melloco, hecho a pedido, revisado por él antes de salir de la cocina. Melloco se dibuja contento (boca abierta, lengua, cabeza ladeada): con la boca cerrada se veía triste. Decisión del dueño.
 
 ## Pendientes conocidos
 
