@@ -21,8 +21,15 @@ Tests: `python manage.py test pedidos`
 
 **El equipo trabaja en `/equipo/`** (spec 010), pensado para el celular:
 
-- **Pedidos:** van en tarjetas por fecha de celebración y cada tarjeta empieza por el perrito, con sus alergias en rojo, lo que contó la familia y lo que le encanta. Desde ahí se avanza el estado (Confirmar pedido → Pasar a cocina → Marcar entregado), se elige quién lo cocina y quién lo reparte, y se escribe a la familia por WhatsApp. La pestaña *Míos* muestra los pedidos asignados a cada quien.
-- **Ficha del perrito:** junta sus pedidos y su cumpleaños de la Ruleta y muestra sus favoritas. El equipo anota en ella raza, tamaño, lo que le encanta, alergias y notas.
+- **Pedidos** (spec 011): la vista del día agrupa los pedidos en Atrasados, Hoy, Mañana, Esta semana y Más adelante, en filas compactas que muestran las alergias en rojo y lo que contó la familia. En computador, la vista *Todo* es un tablero: Nuevos → Confirmados → En cocina. Hay cinco vistas:
+  - *Todo:* todos los pedidos activos.
+  - *Cocina:* "Lo tomo yo" y "Pasar a cocina".
+  - *Reparto:* "Lo llevo yo" y "Marcar entregado".
+  - *Asignados:* los pedidos agrupados por persona.
+  - *Historial:* los entregados y cancelados.
+
+  Cada persona entra a la vista de su grupo. Al tocar un pedido se abre su detalle: avanzar o cancelar, asignar (solo Atención), la dirección y hora de entrega, WhatsApp, la ficha y los últimos cambios.
+- **Perritos:** todas las fichas, con buscador. Cada ficha junta los pedidos y el cumpleaños de la Ruleta y muestra las favoritas. El equipo anota raza, tamaño, lo que le encanta, alergias y notas.
 
 **Usuarios** (los crea el administrador):
 

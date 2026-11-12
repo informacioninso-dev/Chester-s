@@ -810,117 +810,214 @@ class GestorAccesoTests(TestCase):
         self.assertContains(self.client.get(self.url), 'href="/admin/"')
 
 
-class GestorPedidosTests(TestCase):
+class GestorVistaDelDiaTests(TestCase):
+    """Spec 011: vista del día, filas compactas, tablero y vistas por rol."""
+
     url = reverse("pedidos:equipo")
 
     def setUp(self):
         self.yo = persona("ana", "Atención de pedidos")
-        self.client.force_login(self.yo)
-
-    def test_activos_con_la_celebracion_mas_cercana_primero_y_contadores(self):
-        pedido("Lejano", dias=20)
-        pedido("Cercano", dias=2, estado="confirmado")
-        pedido("Entregado", dias=1, estado="entregado")
-        html = self.client.get(self.url).content.decode()
-        self.assertLess(html.index("Para Cercano"), html.index("Para Lejano"))
-        self.assertNotIn("Para Entregado", html)
-        self.assertRegex(html, r"Activos\s*<span[^>]*>2</span>")
-        self.assertRegex(html, r"Entregados\s*<span[^>]*>1</span>")
-        self.assertContains(self.client.get(self.url, {"ver": "entregado"}), "Para Entregado")
-
-    def test_la_tarjeta_empieza_por_el_perrito_y_destaca_sus_alergias(self):
-        p = pedido(nota_familia="Le encanta la zanahoria")
-        p.perrito.no_le_gusta = "Alérgico al pollo"
-        p.perrito.le_encanta = "Los huesitos"
-        p.perrito.save()
-        html = self.client.get(self.url).content.decode()
-        self.assertLess(html.index("Para Rocky"), html.index("Alérgico al pollo"))
-        self.assertLess(html.index("Alérgico al pollo"), html.index("Carne y puré"))
-        self.assertIn("No le gusta / alergias:", html)
-        self.assertIn("Nos contó la familia:", html)
-        self.assertIn("Le encanta la zanahoria", html)
-        self.assertIn("Los huesitos", html)
-        self.assertIn("Familia de Ana", html)
-
-    def test_ayuda_de_la_fecha(self):
-        hoy = timezone.localdate()
-        casos = {0: "Hoy", 1: "Mañana", 3: "En 3 días", -2: "Atrasado"}
-        for dias, texto in casos.items():
-            p = Cotizacion(fecha_cumple=hoy + datetime.timedelta(days=dias), estado="confirmado")
-            self.assertEqual(_cuando(p, hoy)["texto"], texto)
-        entregado = Cotizacion(fecha_cumple=hoy - datetime.timedelta(days=2), estado="entregado")
-        self.assertEqual(_cuando(entregado, hoy)["texto"], "Hace 2 días")
-
-    def test_avanzar_estado_al_instante_y_queda_quien_lo_hizo(self):
-        p = pedido()
-        self.assertContains(self.client.get(self.url), "Confirmar pedido")
-        r = self.client.post(reverse("pedidos:equipo_estado", args=[p.pk]), {"estado": "confirmado"}, **HTMX)
-        p.refresh_from_db()
-        self.assertEqual(p.estado, "confirmado")
-        self.assertContains(r, "Pasar a cocina")
-        self.assertContains(r, f'id="pedido-{p.pk}"')
-        log = LogEntry.objects.get(object_id=str(p.pk))
-        self.assertEqual(log.user, self.yo)
-        self.assertIn("Nuevo → Confirmado", log.get_change_message())
-
-    def test_no_se_saltan_estados(self):
-        p = pedido()
-        self.client.post(reverse("pedidos:equipo_estado", args=[p.pk]), {"estado": "entregado"}, **HTMX)
-        p.refresh_from_db()
-        self.assertEqual(p.estado, "nuevo")
-
-    def test_cancelar_pide_confirmacion(self):
-        p = pedido()
-        self.assertContains(self.client.get(self.url), 'hx-confirm="¿Cancelar el pedido de Rocky?', html=False)
-        self.client.post(reverse("pedidos:equipo_estado", args=[p.pk]), {"estado": "cancelado"}, **HTMX)
-        p.refresh_from_db()
-        self.assertEqual(p.estado, "cancelado")
-
-    def test_buscador(self):
-        pedido("Rocky")
-        pedido("Luna", telefono="0987654321", nombre_cliente="Pedro")
-        for q in ("luna", "Pedro", "0987654321"):
-            r = self.client.get(self.url, {"q": q})
-            self.assertContains(r, "Para Luna")
-            self.assertNotContains(r, "Para Rocky")
-
-    def test_sin_javascript_vuelve_solo_dentro_del_gestor(self):
-        p = pedido()
-        r = self.client.post(reverse("pedidos:equipo_estado", args=[p.pk]),
-                             {"estado": "confirmado", "volver": "https://otro-sitio.example/"})
-        self.assertRedirects(r, self.url, fetch_redirect_response=False)
-
-
-class GestorAsignacionTests(TestCase):
-    def setUp(self):
-        self.yo = persona("ana", "Atención de pedidos")
         self.chef = persona("chef", "Cocina", first_name="Carla")
+        self.chef2 = persona("chef2", "Cocina", first_name="Pedro")
         self.moto = persona("moto", "Reparto", first_name="Mario")
         self.client.force_login(self.yo)
 
-    def test_asignar_cocina_y_reparto(self):
-        p = pedido()
-        html = self.client.get(reverse("pedidos:equipo")).content.decode()
-        self.assertIn(">Carla</option>", html)
-        self.assertIn(">Mario</option>", html)
-        url = reverse("pedidos:equipo_asignar", args=[p.pk])
-        r = self.client.post(url, {"cocinero": self.chef.pk, "repartidor": self.moto.pk}, **HTMX)
-        self.assertContains(r, "Asignación guardada")
-        p.refresh_from_db()
-        self.assertEqual((p.cocinero, p.repartidor), (self.chef, self.moto))
-        self.assertEqual(LogEntry.objects.filter(object_id=str(p.pk)).count(), 2)
-        # Alguien que no está en "Cocina" no se puede asignar.
-        self.client.post(url, {"cocinero": self.moto.pk}, **HTMX)
-        p.refresh_from_db()
-        self.assertEqual(p.cocinero, self.chef)
+    def accion(self, p, tipo, valor="", **extra):
+        return self.client.post(reverse("pedidos:equipo_accion", args=[p.pk]),
+                                {"tipo": tipo, "valor": valor, "origen": "lista", **extra}, **HTMX)
 
-    def test_mis_pedidos(self):
-        pedido("Mio", cocinero=self.chef)
-        pedido("Ajeno")
+    def test_agrupa_por_dia_y_resume_lo_urgente(self):
+        pedido("Lejos", dias=20)
+        pedido("Semana", dias=5)
+        pedido("Manana", dias=1)
+        pedido("Hoyito", dias=0)
+        pedido("Tarde", dias=-1, estado="confirmado")
+        html = self.client.get(self.url).content.decode()
+        self.assertIn("1 atrasado", html)
+        self.assertIn("1 para hoy", html)
+        orden = [html.index(f"{g} · 1") for g in ("Atrasados", "Hoy", "Mañana", "Esta semana", "Más adelante")]
+        self.assertEqual(orden, sorted(orden))
+        self.assertLess(html.index(">Tarde<"), html.index(">Hoyito<"))
+
+    def test_fila_compacta_con_lo_que_hay_que_cuidar(self):
+        p = pedido(nota_familia="Le encanta la zanahoria", cocinero=self.chef, hora_entrega=datetime.time(15, 30))
+        p.perrito.no_le_gusta = "Alérgico al pollo"
+        p.perrito.save()
+        html = self.client.get(self.url).content.decode()
+        self.assertIn("Alergias: Alérgico al pollo", html)
+        self.assertIn("Familia: Le encanta la zanahoria", html)
+        self.assertIn("15:30", html)
+        self.assertIn("Cocina: Carla", html)
+        self.assertIn(f'href="{reverse("pedidos:equipo_pedido", args=[p.pk])}"', html)
+
+    def test_en_computador_todo_es_un_tablero(self):
+        pedido()
+        html = self.client.get(self.url).content.decode()
+        self.assertIn("lg:grid-cols-3", html)
+        for columna in ("Nuevos", "Confirmados", "En cocina"):
+            self.assertIn(columna, html)
+
+    def test_cada_rol_entra_a_su_vista(self):
+        self.assertRegex(self.client.get(self.url).content.decode(), r'aria-current="page"[^>]*>\s*Todo')
         self.client.force_login(self.chef)
-        r = self.client.get(reverse("pedidos:equipo"), {"ver": "mios"})
-        self.assertContains(r, "Para Mio")
-        self.assertNotContains(r, "Para Ajeno")
+        self.assertRegex(self.client.get(self.url).content.decode(), r'aria-current="page"[^>]*>\s*Cocina')
+        self.client.force_login(self.moto)
+        self.assertRegex(self.client.get(self.url).content.decode(), r'aria-current="page"[^>]*>\s*Reparto')
+
+    def test_cocina_toma_sus_pedidos(self):
+        libre = pedido("Libre", estado="confirmado")
+        pedido("Nuevo", estado="nuevo")
+        pedido("Ajeno", estado="confirmado", cocinero=self.chef2)
+        self.client.force_login(self.chef)
+        html = self.client.get(self.url, {"ver": "cocina"}).content.decode()
+        self.assertIn(">Libre<", html)
+        self.assertNotIn(">Nuevo<", html)
+        self.assertNotIn(">Ajeno<", html)
+        self.assertIn("Lo tomo yo", html)
+        r = self.accion(libre, "tomar_cocina", ver="cocina")
+        self.assertContains(r, 'id="vista"')
+        self.assertContains(r, "Tomaste el pedido de Libre.")
+        self.assertContains(r, "Pasar a cocina")
+        libre.refresh_from_db()
+        self.assertEqual(libre.cocinero, self.chef)
+        self.assertEqual(LogEntry.objects.get(object_id=str(libre.pk)).user, self.chef)
+
+    def test_nadie_le_quita_el_pedido_a_otro(self):
+        p = pedido(estado="confirmado", cocinero=self.chef2)
+        self.client.force_login(self.chef)
+        r = self.accion(p, "tomar_cocina", ver="cocina")
+        self.assertContains(r, "Ya lo tiene Pedro.")
+        p.refresh_from_db()
+        self.assertEqual(p.cocinero, self.chef2)
+
+    def test_reparto_lleva_y_entrega(self):
+        p = pedido(estado="en_preparacion")
+        pedido("Confirmado", estado="confirmado")
+        self.client.force_login(self.moto)
+        html = self.client.get(self.url).content.decode()
+        self.assertIn("Lo llevo yo", html)
+        self.assertNotIn(">Confirmado<", html)
+        self.assertContains(self.accion(p, "tomar_reparto", ver="reparto"), "Marcar entregado")
+        self.accion(p, "estado", "entregado", ver="reparto")
+        p.refresh_from_db()
+        self.assertEqual((p.repartidor, p.estado), (self.moto, "entregado"))
+
+    def test_vista_asignados_por_persona(self):
+        pedido("Rocky", estado="en_preparacion", cocinero=self.chef, repartidor=self.moto)
+        pedido("Luna", estado="confirmado")
+        html = self.client.get(self.url, {"ver": "asignados"}).content.decode()
+        self.assertIn("Carla · Cocina · 1", html)
+        self.assertIn("Mario · Reparto · 1", html)
+        self.assertNotIn(">Luna<", html)
+        self.assertIn("Sin quién lo cocine: 1", html)
+
+    def test_historial(self):
+        pedido("Viejo", dias=-30, estado="entregado")
+        pedido("Activo")
+        html = self.client.get(self.url, {"ver": "historial"}).content.decode()
+        self.assertIn(">Viejo<", html)
+        self.assertNotIn(">Activo<", html)
+
+    def test_avanzar_desde_la_lista_y_no_saltar_estados(self):
+        p = pedido()
+        r = self.accion(p, "estado", "confirmado", ver="todo")
+        self.assertContains(r, "Pasar a cocina")
+        self.accion(p, "estado", "entregado", ver="todo")
+        p.refresh_from_db()
+        self.assertEqual(p.estado, "confirmado")
+        self.assertIn("Nuevo → Confirmado", LogEntry.objects.get(object_id=str(p.pk)).get_change_message())
+
+    def test_buscador_dentro_de_la_vista(self):
+        pedido("Rocky")
+        pedido("Luna", telefono="0987654321", nombre_cliente="Pedro")
+        for q in ("luna", "Pedro", "0987654321"):
+            html = self.client.get(self.url, {"q": q}).content.decode()
+            self.assertIn(">Luna<", html)
+            self.assertNotIn(">Rocky<", html)
+
+    def test_pantalla_vacia_orienta(self):
+        self.assertContains(self.client.get(self.url), "Cuando una familia pida desde la página")
+        self.assertNotContains(self.client.get(self.url), "Crea a tu equipo")
+        self.client.force_login(persona("jefe", is_superuser=True, is_staff=True))
+        self.assertContains(self.client.get(self.url), "Crea a tu equipo")
+
+
+class GestorDetalleTests(TestCase):
+    def setUp(self):
+        self.yo = persona("ana", "Atención de pedidos", first_name="Ana")
+        self.chef = persona("chef", "Cocina", first_name="Carla")
+        self.client.force_login(self.yo)
+        self.p = pedido(nota_familia="No tolera la lactosa")
+        self.p.perrito.no_le_gusta = "Alérgico al pollo"
+        self.p.perrito.save()
+        self.url = reverse("pedidos:equipo_pedido", args=[self.p.pk])
+        self.accion = reverse("pedidos:equipo_accion", args=[self.p.pk])
+
+    def test_muestra_primero_al_perrito_y_lo_que_hay_que_cuidar(self):
+        html = self.client.get(self.url).content.decode()
+        self.assertLess(html.index("Para Rocky"), html.index("Alérgico al pollo"))
+        self.assertLess(html.index("Alérgico al pollo"), html.index("No tolera la lactosa"))
+        self.assertIn("Escribir por WhatsApp", html)
+        self.assertIn(reverse("pedidos:equipo_ficha", args=[self.p.perrito_id]), html)
+
+    def test_avanzar_y_cancelar_con_confirmacion(self):
+        html = self.client.get(self.url).content.decode()
+        self.assertIn("Confirmar pedido", html)
+        self.assertIn("return confirm(", html)
+        r = self.client.post(self.accion, {"tipo": "estado", "valor": "cancelado"})
+        self.assertRedirects(r, self.url)
+        self.p.refresh_from_db()
+        self.assertEqual(self.p.estado, "cancelado")
+
+    def test_solo_atencion_asigna_y_cocina_toma(self):
+        self.client.force_login(self.chef)
+        self.assertContains(self.client.get(self.url), "Lo tomo yo")
+        self.assertNotContains(self.client.get(self.url), "Asignar cocina")
+        self.client.post(self.accion, {"tipo": "asignar", "cocinero": self.chef.pk})
+        self.p.refresh_from_db()
+        self.assertIsNone(self.p.cocinero)
+        self.client.force_login(self.yo)
+        self.assertContains(self.client.get(self.url), "Asignar cocina")
+        self.client.post(self.accion, {"tipo": "asignar", "cocinero": self.chef.pk, "repartidor": ""})
+        self.p.refresh_from_db()
+        self.assertEqual(self.p.cocinero, self.chef)
+
+    def test_entrega_con_direccion_y_hora(self):
+        r = self.client.post(self.accion, {"tipo": "entrega", "direccion_entrega": "Casa 14, portón verde",
+                                           "hora_entrega": "15:30"}, follow=True)
+        self.assertContains(r, "Entrega guardada.")
+        self.p.refresh_from_db()
+        self.assertEqual((self.p.direccion_entrega, self.p.hora_entrega), ("Casa 14, portón verde", datetime.time(15, 30)))
+        r = self.client.post(self.accion, {"tipo": "entrega", "hora_entrega": "25:99"}, follow=True)
+        self.assertContains(r, "La hora no es válida")
+
+    def test_muestra_quien_hizo_cada_cambio(self):
+        self.client.post(self.accion, {"tipo": "estado", "valor": "confirmado"})
+        html = self.client.get(self.url).content.decode()
+        self.assertIn("Últimos cambios", html)
+        self.assertIn("Nuevo → Confirmado", html)
+        self.assertIn("<strong class=\"text-slate-800\">Ana</strong>", html)
+
+
+class GestorPerritosTests(TestCase):
+    def setUp(self):
+        self.client.force_login(persona("ana", "Atención de pedidos"))
+
+    def test_seccion_perritos_con_buscador_y_ficha(self):
+        p = pedido("Rocky")
+        pedido("Rocky", dias=40)
+        pedido("Luna", telefono="0987654321", nombre_cliente="Pedro")
+        p.perrito.no_le_gusta = "Alérgico al pollo"
+        p.perrito.save()
+        self.assertContains(self.client.get(reverse("pedidos:equipo")), f'href="{reverse("pedidos:equipo_perritos")}"')
+        html = self.client.get(reverse("pedidos:equipo_perritos")).content.decode()
+        self.assertIn("Rocky", html)
+        self.assertIn("2 pasteles", html)
+        self.assertIn("Alergias: Alérgico al pollo", html)
+        self.assertIn(reverse("pedidos:equipo_ficha", args=[p.perrito_id]), html)
+        r = self.client.get(reverse("pedidos:equipo_perritos"), {"q": "pedro"})
+        self.assertContains(r, "Luna")
+        self.assertNotContains(r, "Rocky")
 
 
 class FichaPerritoTests(TestCase):

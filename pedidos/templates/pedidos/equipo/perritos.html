@@ -1,0 +1,42 @@
+{% extends "pedidos/equipo/base.html" %}
+{% block titulo %}Perritos{% endblock %}
+{% block contenido %}
+<h1 class="font-display text-3xl font-medium tracking-tight">Perritos</h1>
+<p class="mt-1 text-sm text-slate-600">Cada uno con su ficha: lo que le encanta, sus alergias y todos sus pasteles.</p>
+
+<form method="get" role="search" class="mt-5 flex gap-2">
+  <label for="buscar-perrito" class="sr-only">Buscar por perrito, familia o teléfono</label>
+  <input id="buscar-perrito" type="search" name="q" value="{{ busqueda }}" placeholder="Buscar perrito, familia o teléfono…" autocomplete="off"
+         class="min-w-0 flex-1 rounded-full border border-stone-300 bg-white px-4 py-2.5 text-base text-slate-900 placeholder:text-stone-400 focus:border-collar-600 focus:outline-none focus:ring-4 focus:ring-collar-600/15">
+  <button type="submit" class="min-h-11 shrink-0 rounded-full bg-slate-900 px-5 text-sm font-bold text-white transition hover:bg-slate-700">Buscar</button>
+</form>
+{% if busqueda %}<p class="mt-3 text-sm text-slate-600">Resultados para “{{ busqueda }}”. <a href="?" class="font-bold underline underline-offset-2">Ver todos</a></p>{% endif %}
+
+<ul class="mt-6 space-y-2">
+  {% for f in filas %}
+    {% with perrito=f.perrito %}
+    <li>
+      <a href="{% url 'pedidos:equipo_ficha' perrito.pk %}"
+         class="group flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-stone-200 transition hover:ring-slate-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-collar-600/20">
+        <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-crema-100 font-display text-xl font-medium text-slate-800" aria-hidden="true">{{ perrito.nombre|first|upper }}</span>
+        <span class="min-w-0 flex-1">
+          <span class="block truncate font-display text-lg font-medium group-hover:underline group-hover:underline-offset-4">{{ perrito.nombre }}</span>
+          <span class="block truncate text-sm text-slate-600">
+            Familia de {{ perrito.familia|default:"—" }}{% if perrito.raza %} · {{ perrito.raza }}{% endif %} · {{ perrito.n_pedidos }} pastel{{ perrito.n_pedidos|pluralize:"es" }}{% if f.proximo_cumple %} · cumple el {{ f.proximo_cumple|date:"j \d\e F" }}{% endif %}
+          </span>
+          {% if perrito.no_le_gusta %}
+            <span class="mt-1.5 inline-block max-w-full truncate rounded-full bg-collar-50 px-2.5 py-1 text-xs font-bold text-collar-800 ring-1 ring-collar-200">Alergias: {{ perrito.no_le_gusta|truncatechars:48 }}</span>
+          {% endif %}
+        </span>
+        <svg class="h-5 w-5 shrink-0 text-slate-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 5 5 5-5 5"/></svg>
+      </a>
+    </li>
+    {% endwith %}
+  {% empty %}
+    <li class="rounded-3xl border border-dashed border-stone-300 bg-white/60 px-6 py-10 text-center">
+      <p class="font-display text-xl font-medium">{% if busqueda %}No encontramos perritos con esa búsqueda.{% else %}Aún no hay perritos.{% endif %}</p>
+      {% if not busqueda %}<p class="mx-auto mt-2 max-w-md text-sm text-slate-600">Cada perrito tiene su ficha desde su primer pedido o desde que su familia lo registra en la Ruleta de Melloco.</p>{% endif %}
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}

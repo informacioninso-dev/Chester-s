@@ -1,0 +1,36 @@
+{# Una fila por pedido (spec 011): el perrito primero, lo que hay que cuidar y una sola acción. Tocarla abre el detalle. #}
+{% with p=f.p %}
+<li class="flex gap-3 rounded-2xl bg-white p-3 shadow-sm ring-1 sm:p-4 flex-col {% if not en_tablero %}sm:flex-row sm:items-center{% endif %} {% if f.cuando.urgente %}ring-collar-200{% else %}ring-stone-200{% endif %}">
+  <a href="{% url 'pedidos:equipo_pedido' p.pk %}" class="group block min-w-0 flex-1 rounded-xl focus:outline-none focus-visible:ring-4 focus-visible:ring-collar-600/20">
+    <span class="flex items-center gap-2">
+      <span class="truncate font-display text-lg font-medium group-hover:underline group-hover:underline-offset-4">{{ p.nombre_perro }}</span>
+      <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-extrabold uppercase tracking-wide
+        {% if p.estado == 'nuevo' %}bg-collar-600 text-white{% elif p.estado == 'confirmado' %}bg-slate-900 text-white{% elif p.estado == 'en_preparacion' %}bg-crema-200 text-slate-900{% elif p.estado == 'entregado' %}bg-stone-200 text-slate-700{% else %}bg-stone-100 text-slate-500{% endif %}">{% if p.estado == 'en_preparacion' %}En cocina{% else %}{{ p.get_estado_display }}{% endif %}</span>
+    </span>
+    <span class="mt-0.5 block truncate text-sm text-slate-600">
+      <span class="{% if f.cuando.urgente %}font-bold text-collar-700{% endif %}">{% if en_tablero or vista == 'historial' or vista == 'asignados' %}{{ f.cuando.texto }} · {% endif %}{{ p.fecha_cumple|date:"D j \d\e M" }}</span>{% if p.hora_entrega %} · <strong class="text-slate-900">{{ p.hora_entrega|time:"H:i" }}</strong>{% endif %} · {{ p.get_receta_display }} · {{ p.get_estilo_display }}
+    </span>
+    {% if p.perrito.no_le_gusta or p.nota_familia or p.cocinero or p.repartidor %}
+      <span class="mt-2 flex flex-wrap gap-1.5 text-xs font-bold">
+        {% if p.perrito.no_le_gusta %}<span class="max-w-full truncate rounded-full bg-collar-50 px-2.5 py-1 text-collar-800 ring-1 ring-collar-200">Alergias: {{ p.perrito.no_le_gusta|truncatechars:48 }}</span>{% endif %}
+        {% if p.nota_familia %}<span class="max-w-full truncate rounded-full bg-crema-50 px-2.5 py-1 text-slate-800 ring-1 ring-crema-200">Familia: {{ p.nota_familia|truncatechars:40 }}</span>{% endif %}
+        {% if p.cocinero %}<span class="rounded-full bg-stone-100 px-2.5 py-1 text-slate-700">Cocina: {{ p.cocinero.get_full_name|default:p.cocinero.username }}</span>{% endif %}
+        {% if p.repartidor %}<span class="rounded-full bg-stone-100 px-2.5 py-1 text-slate-700">Reparto: {{ p.repartidor.get_full_name|default:p.repartidor.username }}</span>{% endif %}
+      </span>
+    {% endif %}
+  </a>
+  {% if f.accion %}
+    <form method="post" action="{% url 'pedidos:equipo_accion' p.pk %}" class="sm:shrink-0"
+          hx-post="{% url 'pedidos:equipo_accion' p.pk %}" hx-target="#vista" hx-swap="outerHTML" hx-disabled-elt="find button">
+      {% csrf_token %}
+      <input type="hidden" name="tipo" value="{{ f.accion.0 }}">
+      <input type="hidden" name="valor" value="{{ f.accion.1 }}">
+      <input type="hidden" name="origen" value="lista">
+      <input type="hidden" name="ver" value="{{ vista }}">
+      <input type="hidden" name="q" value="{{ busqueda }}">
+      <button type="submit" class="min-h-11 whitespace-nowrap rounded-full px-4 text-sm font-extrabold transition focus:outline-none focus-visible:ring-4 w-full {% if not en_tablero %}sm:w-auto{% endif %}
+        {% if f.accion.0 == 'estado' %}bg-collar-600 text-white hover:bg-collar-700 focus-visible:ring-collar-600/30{% else %}bg-slate-900 text-white hover:bg-slate-700 focus-visible:ring-slate-900/30{% endif %}">{{ f.accion.2 }}<span class="sr-only">: {{ p.nombre_perro }}</span></button>
+    </form>
+  {% endif %}
+</li>
+{% endwith %}

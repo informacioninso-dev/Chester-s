@@ -161,6 +161,9 @@ class Cotizacion(ConWhatsAppCliente, ConFichaDePerrito, SincronizableCRM):
                                  related_name="pedidos_en_cocina", verbose_name="lo cocina")
     repartidor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
                                    related_name="pedidos_en_reparto", verbose_name="lo reparte")
+    # Spec 011: la entrega la coordina el equipo por WhatsApp y la anota en el gestor.
+    direccion_entrega = models.TextField("dirección de entrega", blank=True, max_length=300)
+    hora_entrega = models.TimeField("hora de entrega", null=True, blank=True)
 
     class Meta:
         ordering = ["-creado_en"]

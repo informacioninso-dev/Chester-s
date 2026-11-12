@@ -1,0 +1,111 @@
+{# Vista del día (spec 011). Las acciones rápidas la vuelven a pintar entera con HTMX. #}
+<div id="vista">
+  {% if aviso %}
+    <p role="status" class="mb-4 rounded-2xl px-4 py-3 text-sm font-semibold {% if aviso.ok %}bg-white text-slate-800 ring-1 ring-stone-200{% else %}bg-collar-50 text-collar-800 ring-1 ring-collar-200{% endif %}">{{ aviso.texto }}</p>
+  {% endif %}
+
+  <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+    <h1 class="font-display text-3xl font-medium tracking-tight">Hoy, {{ hoy|date:"l j \d\e F" }}</h1>
+    <p class="flex flex-wrap gap-2 text-sm font-bold">
+      {% if para_hoy or atrasados %}
+        {% if atrasados %}<span class="rounded-full bg-collar-600 px-3 py-1 text-white">{{ atrasados }} atrasado{{ atrasados|pluralize }}</span>{% endif %}
+        {% if para_hoy %}<span class="rounded-full bg-slate-900 px-3 py-1 text-white">{{ para_hoy }} para hoy</span>{% endif %}
+      {% else %}
+        <span class="rounded-full bg-white px-3 py-1 text-slate-600 ring-1 ring-stone-200">Nada urgente por hoy</span>
+      {% endif %}
+    </p>
+  </div>
+
+  {# Vistas por rol + buscador. #}
+  <div class="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <nav aria-label="Vistas" class="sin-barra -mx-4 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0">
+      <ul class="flex w-max gap-1 rounded-full bg-white p-1 ring-1 ring-stone-200 sm:w-auto sm:flex-wrap">
+        {% for v in vistas %}
+          <li>
+            <a href="?ver={{ v.clave }}{% if busqueda %}&amp;q={{ busqueda|urlencode }}{% endif %}" {% if v.actual %}aria-current="page"{% endif %}
+               class="inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-bold transition {% if v.actual %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-stone-100{% endif %}">
+              {{ v.nombre }}{% if v.clave != 'historial' %}<span class="rounded-full px-2 py-0.5 text-xs {% if v.actual %}bg-white/15{% else %}bg-stone-100{% endif %}">{{ v.total }}</span>{% endif %}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </nav>
+    <form method="get" role="search" class="flex gap-2 lg:w-96">
+      <input type="hidden" name="ver" value="{{ vista }}">
+      <label for="buscar" class="sr-only">Buscar por perrito, familia o teléfono</label>
+      <input id="buscar" type="search" name="q" value="{{ busqueda }}" placeholder="Buscar perrito, familia o teléfono…" autocomplete="off"
+             class="min-w-0 flex-1 rounded-full border border-stone-300 bg-white px-4 py-2.5 text-base text-slate-900 placeholder:text-stone-400 focus:border-collar-600 focus:outline-none focus:ring-4 focus:ring-collar-600/15">
+      <button type="submit" class="min-h-11 shrink-0 rounded-full bg-slate-900 px-5 text-sm font-bold text-white transition hover:bg-slate-700">Buscar</button>
+    </form>
+  </div>
+  {% if busqueda %}
+    <p class="mt-3 text-sm text-slate-600">Resultados para “{{ busqueda }}”. <a href="?ver={{ vista }}" class="font-bold underline underline-offset-2">Quitar búsqueda</a></p>
+  {% endif %}
+
+  {% if vista == "asignados" %}
+    <p class="mt-5 flex flex-wrap gap-2 text-sm font-bold">
+      {% for f in falta_asignar %}
+        <span class="rounded-full px-3 py-1 {% if f.total %}bg-crema-200 text-slate-900{% else %}bg-white text-slate-500 ring-1 ring-stone-200{% endif %}">{{ f.nombre }}: {{ f.total }}</span>
+      {% endfor %}
+    </p>
+  {% endif %}
+
+  {% if not filas %}
+    {# Pantalla vacía que orienta. #}
+    <div class="mt-6 rounded-3xl border border-dashed border-stone-300 bg-white/60 px-6 py-10 text-center">
+      <p class="font-display text-xl font-medium">
+        {% if busqueda %}No encontramos pedidos con esa búsqueda.
+        {% elif vista == "cocina" %}Nada por cocinar.
+        {% elif vista == "reparto" %}Nada por repartir.
+        {% elif vista == "asignados" %}Nadie tiene pedidos asignados.
+        {% elif vista == "historial" %}Aún no hay pedidos entregados ni cancelados.
+        {% else %}No hay pedidos activos.{% endif %}
+      </p>
+      <p class="mx-auto mt-2 max-w-md text-sm text-slate-600">
+        {% if vista == "cocina" %}Aquí aparecen los pedidos confirmados: los tuyos y los que nadie ha tomado.
+        {% elif vista == "reparto" %}Aquí aparecen los pedidos que ya están en cocina: los tuyos y los que nadie lleva.
+        {% elif vista == "asignados" %}Cuando alguien de cocina o reparto tome un pedido, aparecerá aquí con su nombre.
+        {% elif vista != "historial" and not busqueda %}Cuando una familia pida desde la página o el chat, su pedido aparecerá aquí, ordenado por el día de la celebración.{% endif %}
+      </p>
+      {% if sin_pedidos and request.user.is_superuser %}
+        <ol class="mx-auto mt-6 max-w-md space-y-2 text-left text-sm text-slate-700">
+          <li><strong>1.</strong> Crea a tu equipo en el <a href="{% url 'admin:auth_user_add' %}" class="font-bold underline underline-offset-2">Panel</a> y ponle a cada persona su grupo: Atención de pedidos, Cocina o Reparto.</li>
+          <li><strong>2.</strong> Haz un pedido de prueba en la <a href="{% url 'pedidos:index' %}" target="_blank" rel="noopener" class="font-bold underline underline-offset-2">página de Chester’s<span class="sr-only"> (se abre en otra pestaña)</span></a> y vuelve aquí.</li>
+        </ol>
+      {% endif %}
+    </div>
+
+  {% elif vista == "historial" %}
+    <ul class="mt-6 max-w-3xl space-y-2">
+      {% for f in filas %}{% include "pedidos/equipo/fila_pedido.html" %}{% endfor %}
+    </ul>
+
+  {% else %}
+    {# Lista agrupada (por día o por persona). En computador, "Todo" se ve como tablero. #}
+    <div class="mt-6 max-w-3xl space-y-7 {% if vista == 'todo' %}lg:hidden{% endif %}">
+      {% for g in grupos_vista %}
+        <section aria-labelledby="grupo-{{ forloop.counter }}">
+          <h2 id="grupo-{{ forloop.counter }}" class="mb-2 text-xs font-extrabold uppercase tracking-[0.16em] {% if g.nombre == 'Atrasados' %}text-collar-700{% else %}text-slate-500{% endif %}">{{ g.nombre }} · {{ g.filas|length }}</h2>
+          <ul class="space-y-2">
+            {% for f in g.filas %}{% include "pedidos/equipo/fila_pedido.html" %}{% endfor %}
+          </ul>
+        </section>
+      {% endfor %}
+    </div>
+
+    {% if vista == "todo" %}
+      <div class="mt-6 hidden gap-4 lg:grid lg:grid-cols-3">
+        {% for col in tablero %}
+          <section aria-labelledby="columna-{{ forloop.counter }}" class="rounded-3xl bg-stone-200/50 p-3">
+            <h2 id="columna-{{ forloop.counter }}" class="flex items-center justify-between px-2 pb-3 pt-1 text-sm font-extrabold">
+              {{ col.nombre }} <span class="rounded-full bg-white px-2.5 py-0.5 text-xs">{{ col.filas|length }}</span>
+            </h2>
+            <ul class="space-y-2">
+              {% for f in col.filas %}{% include "pedidos/equipo/fila_pedido.html" with en_tablero=True %}{% empty %}<li class="px-2 py-6 text-center text-sm text-slate-500">Nada aquí.</li>{% endfor %}
+            </ul>
+          </section>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endif %}
+</div>

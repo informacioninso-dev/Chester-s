@@ -45,6 +45,8 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 - 2026-11-12 · Gestor del equipo en `/equipo/` (spec 010). Cada tarjeta empieza por el perrito y sus alergias, no por el trámite: "cada pastel se hace con cariño para alguien" es la parte humana del negocio (dueño). La gestión interna se limita a estados, cocina y reparto; el dueño pidió no agregar más por ahora. `/admin/` queda para el administrador.
 - 2026-11-12 · La ficha del perrito se identifica por WhatsApp (formato 593…) + nombre sin tildes ni mayúsculas. Se aceptó que una familia con dos perritos del mismo nombre comparta ficha.
 
+- 2026-11-12 · El gestor se organiza **por día y por rol** (spec 011), no por estado: al dueño la primera versión, en tarjetas grandes con pestañas por estado, le pareció mala para el equipo. Una sola acción rápida por fila; el resto, en el detalle. La dirección y la hora de entrega las anota el equipo, no el cliente.
+
 ## Pendientes conocidos
 
 - Revisar con un abogado el texto de `/privacidad/` (spec 001) y agregar razón social/RUC del responsable.
