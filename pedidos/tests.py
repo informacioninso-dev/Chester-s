@@ -376,7 +376,9 @@ class RendimientoTests(TestCase):
 
     def test_melloco_en_la_insignia_y_el_chat(self):
         r = self.client.get(reverse("pedidos:index"))
-        # Dibujo de Melloco en la insignia, la cabecera del chat y el botón flotante.
+        # Dibujo de Melloco en el sello de calidad, la cabecera del chat y el botón flotante.
+        self.assertContains(r, "APROBADO POR MELLOCO · DIRECTOR DE CALIDAD")
+        self.assertContains(r, "Control de calidad Melloco")
         self.assertContains(r, "/static/pedidos/img/melloco.svg", count=3)
         svg = (RAIZ / "pedidos/static/pedidos/img/melloco.svg").read_text(encoding="utf-8")
         self.assertIn("<title", svg)

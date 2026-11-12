@@ -55,11 +55,14 @@
             <a href="#historia" class="text-sm font-bold text-slate-700 underline decoration-stone-300 underline-offset-4 transition hover:decoration-slate-900">Conoce a Chester</a>
           </div>
 
-          <ul class="mt-14 grid max-w-lg grid-cols-3 gap-4 border-t border-stone-200 pt-6 text-sm">
-            <li><span class="block font-display text-lg">Hecho</span><span class="text-slate-500">a pedido</span></li>
-            <li><span class="block font-display text-lg">Recetas</span><span class="text-slate-500">caseras</span></li>
-            <li><span class="block font-display text-lg">Melloco</span><span class="text-slate-500">control de calidad</span></li>
-          </ul>
+          <div class="mt-14 max-w-xl border-t border-stone-200 pt-6">
+            <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-collar-700">Control de calidad Melloco</p>
+            <ul class="mt-4 grid gap-3 text-base">
+              <li class="flex items-start gap-2.5"><span class="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-collar-600 text-white" aria-hidden="true"><svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 10.5 3.2 3L15 6.5"/></svg></span><span><strong class="font-display font-medium">Recetas caseras</strong> <span class="text-slate-500">aprobadas por Melloco</span></span></li>
+              <li class="flex items-start gap-2.5"><span class="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-collar-600 text-white" aria-hidden="true"><svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 10.5 3.2 3L15 6.5"/></svg></span><span><strong class="font-display font-medium">Hecho a pedido</strong> <span class="text-slate-500">para cada cumpleaños</span></span></li>
+              <li class="flex items-start gap-2.5"><span class="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-collar-600 text-white" aria-hidden="true"><svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 10.5 3.2 3L15 6.5"/></svg></span><span><strong class="font-display font-medium">Revisado por él</strong> <span class="text-slate-500">antes de salir de la cocina</span></span></li>
+            </ul>
+          </div>
         </div>
 
         <div class="order-1 lg:order-2 lg:col-span-6">
@@ -74,14 +77,24 @@
                    class="w-full">
               </picture>
             </div>
-            <div class="absolute -bottom-8 left-4 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-xl ring-1 ring-black/5 sm:left-8">
-              <span class="relative shrink-0">
-                <img src="{% static 'pedidos/img/melloco.svg' %}" alt="" width="44" height="44" class="h-11 w-11 rounded-full object-cover">
-                <span class="absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-collar-600 text-white ring-2 ring-white" aria-hidden="true">
-                  <svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 10.5 3.2 3L15 6.5"/></svg>
-                </span>
-              </span>
-              <span class="text-sm leading-tight"><strong class="block">Aprobado por Melloco</strong><span class="text-slate-500">Director de Calidad</span></span>
+            {# Sello de calidad de Melloco: la idea central de la marca. #}
+            <div class="absolute -right-3 -top-6 w-28 rotate-[8deg] sm:-right-8 sm:-top-10 sm:w-40" role="img" aria-label="Sello de calidad: aprobado por Melloco, Director de Calidad">
+              <svg viewBox="0 0 200 200" class="w-full drop-shadow-xl" aria-hidden="true">
+                <defs>
+                  <path id="sello-arco" d="M28 100a72 72 0 1 1 144 0a72 72 0 1 1-144 0"/>
+                  <clipPath id="sello-cara"><circle cx="100" cy="100" r="50"/></clipPath>
+                </defs>
+                <circle cx="100" cy="100" r="97" fill="#D62828"/>
+                <circle cx="100" cy="100" r="89" fill="none" stroke="#FBF6EF" stroke-width="2" stroke-dasharray="1 5" stroke-linecap="round"/>
+                <text fill="#FBF6EF" font-family="Nunito, ui-sans-serif, system-ui, sans-serif" font-size="14" font-weight="800">
+                  <textPath href="#sello-arco" textLength="448" lengthAdjust="spacing">APROBADO POR MELLOCO · DIRECTOR DE CALIDAD ·</textPath>
+                </text>
+                <circle cx="100" cy="100" r="55" fill="#FBF6EF"/>
+                <image href="{% static 'pedidos/img/melloco.svg' %}" x="50" y="50" width="100" height="100" clip-path="url(#sello-cara)"/>
+                <circle cx="100" cy="100" r="55" fill="none" stroke="#1E1B18" stroke-width="3"/>
+                <circle cx="133" cy="133" r="14" fill="#0F172A" stroke="#FBF6EF" stroke-width="3.5"/>
+                <path d="m126.5 133 5 5 9-10" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
             </div>
           </div>
         </div>
