@@ -379,3 +379,62 @@ class RendimientoTests(TestCase):
                           DJANGO_DEBUG="0", DJANGO_SECRET_KEY="x" * 50)
         self.assertIn("whitenoise.storage.CompressedManifestStaticFilesStorage", r.stdout, r.stderr)
         self.assertIn("True", r.stdout)
+
+
+# ---------------------------------------------------------------------------
+# Spec 004 · SEO
+# ---------------------------------------------------------------------------
+
+class SeoTests(TestCase):
+    def test_canonica_absoluta_y_fragmentos_apuntan_a_la_portada(self):
+        casos = {
+            reverse("pedidos:index"): "http://testserver/",
+            reverse("pedidos:configurador"): "http://testserver/",
+            reverse("pedidos:ruleta"): "http://testserver/",
+            reverse("pedidos:privacidad"): "http://testserver/privacidad/",
+        }
+        for ruta, canonica in casos.items():
+            r = self.client.get(ruta)
+            self.assertContains(r, f'<link rel="canonical" href="{canonica}">', msg_prefix=ruta)
+            self.assertContains(r, f'<meta property="og:url" content="{canonica}">', msg_prefix=ruta)
+
+    def test_open_graph_completo_con_imagen_absoluta(self):
+        r = self.client.get(reverse("pedidos:index"))
+        self.assertContains(r, '<meta property="og:image" content="http://testserver/static/pedidos/img/logo.jpg">')
+        for etiqueta in ('og:image:width" content="1000"', 'og:image:height" content="914"',
+                         'og:type" content="website"', 'og:locale" content="es_EC"',
+                         'og:site_name" content="Chester’s"', 'twitter:card" content="summary_large_image"'):
+            self.assertContains(r, etiqueta)
+
+    def test_privacidad_tiene_titulo_y_descripcion_propios(self):
+        portada = self.client.get(reverse("pedidos:index")).content.decode()
+        r = self.client.get(reverse("pedidos:privacidad"))
+        self.assertContains(r, "<title>Política de privacidad | Chester’s</title>")
+        self.assertContains(r, '<meta name="description" content="Qué datos guarda Chester’s')
+        self.assertNotIn("Qué datos guarda", portada)
+
+    def test_robots_txt(self):
+        r = self.client.get("/robots.txt")
+        self.assertEqual(r["Content-Type"], "text/plain; charset=utf-8")
+        texto = r.content.decode()
+        for linea in ("User-agent: *", "Disallow: /api/", "Disallow: /configurador/",
+                      "Disallow: /ruleta/", "Sitemap: http://testserver/sitemap.xml"):
+            self.assertIn(linea, texto)
+        self.assertNotIn("admin", texto)  # no revelar la ruta del panel
+
+    def test_sitemap(self):
+        r = self.client.get("/sitemap.xml")
+        self.assertContains(r, "<loc>http://testserver/</loc>")
+        self.assertContains(r, "<loc>http://testserver/privacidad/</loc>")
+        self.assertNotContains(r, "configurador")
+
+    @override_settings(CHESTERS_WHATSAPP="593991112233")
+    def test_datos_estructurados_bakery(self):
+        html = self.client.get(reverse("pedidos:index")).content.decode()
+        inicio = html.index('<script type="application/ld+json">') + len('<script type="application/ld+json">')
+        datos = json.loads(html[inicio:html.index("</script>", inicio)])
+        self.assertEqual(datos["@type"], "Bakery")
+        self.assertEqual(datos["name"], "Chester’s")
+        self.assertEqual(datos["url"], "http://testserver/")
+        self.assertEqual(datos["telephone"], "+593991112233")
+        self.assertTrue(datos["logo"].startswith("http://testserver/static/"))

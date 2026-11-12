@@ -2,6 +2,7 @@
 <html lang="es" class="scroll-smooth scroll-pt-16">
 <head>
   {% include "pedidos/partials/head.html" %}
+  {% if datos_estructurados %}<script type="application/ld+json">{{ datos_estructurados }}</script>{% endif %}
 </head>
 
 <body class="bg-stone-50 font-sans text-slate-900 antialiased selection:bg-collar-100"

@@ -7,10 +7,13 @@ from urllib.parse import quote
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
+from django.templatetags.static import static
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from django.utils.safestring import mark_safe
 from django.utils.formats import date_format
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
@@ -172,13 +175,52 @@ def _contexto_index():
 
 @require_GET
 def index(request):
-    return render(request, "pedidos/index.html", _contexto_index())
+    ctx = _contexto_index()
+    ctx["datos_estructurados"] = _datos_estructurados(request)
+    return render(request, "pedidos/index.html", ctx)
+
+
+def _datos_estructurados(request):
+    """JSON-LD de la portada (schema.org/Bakery), escapado para ir dentro de <script>."""
+    datos = {
+        "@context": "https://schema.org",
+        "@type": "Bakery",
+        "name": "Chester’s",
+        "description": "Pasteles saludables y artesanales para el cumpleaños de tu perrito.",
+        "url": request.build_absolute_uri(reverse("pedidos:index")),
+        "logo": request.build_absolute_uri(static("pedidos/img/logo.jpg")),
+        "image": request.build_absolute_uri(static("pedidos/img/logo.jpg")),
+        "telephone": f"+{settings.CHESTERS_WHATSAPP}",
+        "servesCuisine": "Pasteles para perritos",
+        "areaServed": {"@type": "Country", "name": "Ecuador"},
+    }
+    texto = json.dumps(datos, ensure_ascii=False)
+    for caracter, escape in (("<", r"\u003C"), (">", r"\u003E"), ("&", r"\u0026")):
+        texto = texto.replace(caracter, escape)
+    return mark_safe(texto)
+
+
+@require_GET
+def robots_txt(request):
+    lineas = [
+        "User-agent: *",
+        # Fragmentos de HTMX y la API: no son páginas para buscadores.
+        "Disallow: /api/",
+        "Disallow: /configurador/",
+        "Disallow: /ruleta/",
+        "",
+        f"Sitemap: {request.build_absolute_uri(reverse('sitemap'))}",
+    ]
+    return HttpResponse("\n".join(lineas) + "\n", content_type="text/plain; charset=utf-8")
 
 
 @require_GET
 def privacidad(request):
     return render(request, "pedidos/privacidad.html", {
-        "titulo": "Política de privacidad | Chester's",
+        "titulo": "Política de privacidad | Chester’s",
+        "descripcion": "Qué datos guarda Chester’s, para qué los usa, con quién los comparte "
+                       "y cómo pedir que los corrijan o los borren (LOPDP, Ecuador).",
+        "og_descripcion": "Qué datos guardamos y cómo ejercer tus derechos.",
         "whatsapp": settings.CHESTERS_WHATSAPP,
     })
 

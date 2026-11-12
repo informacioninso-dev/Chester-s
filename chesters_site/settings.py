@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     # Antes de staticfiles: runserver deja los estáticos a WhiteNoise, igual que en producción.
     'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
+    'django.contrib.sitemaps',
     'pedidos',
 ]
 
@@ -110,6 +111,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'pedidos.context_processors.seo',
             ],
         },
     },
