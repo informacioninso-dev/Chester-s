@@ -28,7 +28,7 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 - 2026-11-11 · Chat de pedidos (spec 005) **guiado y sin IA**: sin claves, sin costo por mensaje y sin enviar datos personales a otro proveedor. Valida con el mismo `PedidoForm` y guarda con `_guardar_cotizacion`, que también usa el configurador (mismo límite, campo trampa y aviso a Binn). Si algún día se le agrega IA, hay que actualizar la política de privacidad.
 - 2026-11-11 · Equipo (spec 006): el grupo "Atención de pedidos" lo crea una migración con permisos de ver y editar, sin borrar; el superusuario es el único que gestiona usuarios. `sincronizado_crm` es de solo lectura en el panel: solo lo cambian el webhook y la API de Binn.
 
-- 2026-11-11 · Foto real de Melloco (con gorrito) en la insignia "Aprobado por Melloco", la cabecera del chat y el botón flotante. Original en `assets/melloco-original.png` para volver a recortarla. En "Nuestra historia" no va por ahora — decisión del dueño.
+- 2026-11-11 · Melloco tiene cara: dibujo vectorial (`melloco.svg`) en el estilo de Chester, en la insignia "Aprobado por Melloco", la cabecera del chat y el botón flotante. Se genera con `assets/melloco_svg.py` a partir de la foto de referencia `assets/melloco-original.png`. Es provisional: el dueño quiere cambiarlo más adelante. En "Nuestra historia" no va por ahora — decisión del dueño.
 
 ## Pendientes conocidos
 

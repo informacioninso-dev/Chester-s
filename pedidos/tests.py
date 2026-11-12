@@ -369,15 +369,16 @@ class RendimientoTests(TestCase):
         for archivo in ("logo-640.webp", "logo.webp", "chester-avatar-96.webp", "chester-avatar.webp"):
             self.assertContains(r, f"/static/pedidos/img/{archivo}")
             self.assertTrue((RAIZ / "pedidos/static/pedidos/img" / archivo).exists(), archivo)
-        self.assertContains(r, 'type="image/webp"', count=6)  # menú, portada, Melloco, historia, chat y botón del chat
+        self.assertContains(r, 'type="image/webp"', count=3)  # menú, portada e historia (Melloco es SVG)
         self.assertContains(r, "/static/pedidos/img/logo.jpg")
 
     def test_melloco_en_la_insignia_y_el_chat(self):
         r = self.client.get(reverse("pedidos:index"))
-        self.assertContains(r, "/static/pedidos/img/melloco-96.webp", count=3)
-        self.assertContains(r, "/static/pedidos/img/melloco-96.jpg", count=3)
-        for archivo in ("melloco-96.webp", "melloco-192.webp", "melloco-96.jpg"):
-            self.assertTrue((RAIZ / "pedidos/static/pedidos/img" / archivo).exists(), archivo)
+        # Dibujo de Melloco en la insignia, la cabecera del chat y el botón flotante.
+        self.assertContains(r, "/static/pedidos/img/melloco.svg", count=3)
+        svg = (RAIZ / "pedidos/static/pedidos/img/melloco.svg").read_text(encoding="utf-8")
+        self.assertIn("<title", svg)
+        self.assertLess(len(svg), 10_000)
 
     def test_produccion_usa_estaticos_con_hash_y_whitenoise(self):
         r = correr_django("shell", "-c",
