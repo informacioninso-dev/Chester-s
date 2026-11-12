@@ -35,7 +35,7 @@
     </div>
   </form>
   {% if obj %}
-    <form method="post" class="mt-4" onsubmit="return confirm('¿Eliminar {{ obj.nombre|escapejs }} del Recetario?');">
+    <form method="post" class="mt-4" data-confirmar="¿Eliminar {{ obj.nombre }} del Recetario?">
       {% csrf_token %}<input type="hidden" name="accion" value="eliminar">
       {% if usados %}
         <p class="text-sm text-slate-500">{{ obj.nombre }} ya se usó en {{ usados }} pedido{{ usados|pluralize }}: no se puede eliminar. Para dejar de ofrecerla, desmarca «Disponible para clientes».</p>

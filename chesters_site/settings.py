@@ -68,6 +68,10 @@ if not DEBUG:
                             ('security.W021', SECURE_HSTS_PRELOAD)) if not activo
     ]
 
+# Sesiones de 12 horas que se renuevan con el uso: celulares compartidos en la cocina (spec 018).
+SESSION_COOKIE_AGE = 60 * 60 * 12
+SESSION_SAVE_EVERY_REQUEST = True
+
 # Ruta del panel de administración. Cambiarla reduce los intentos automáticos de login.
 ADMIN_URL = os.environ.get('DJANGO_ADMIN_URL', 'admin/').strip('/') + '/'
 
@@ -89,6 +93,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'pedidos.seguridad.PoliticaDeContenido',
     # Sirve los estáticos comprimidos y con caché larga (spec 003).
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

@@ -25,13 +25,6 @@
     </button>
     <p id="copiado" role="status" class="mt-2 text-sm text-stone-300"></p>
   </section>
-  <script>
-    document.getElementById('copiar-mensaje').addEventListener('click', async () => {
-      const area = document.getElementById('mensaje-acceso');
-      try { await navigator.clipboard.writeText(area.value); } catch (e) { area.select(); document.execCommand('copy'); }
-      document.getElementById('copiado').textContent = 'Copiado. Ahora pégalo en WhatsApp.';
-    });
-  </script>
 {% endif %}
 
 <h2 class="{% if credenciales %}mt-8{% else %}mt-1{% endif %} font-display text-3xl font-medium tracking-tight">
@@ -75,12 +68,12 @@
   <section aria-labelledby="acceso" class="mt-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-stone-200 sm:p-6">
     <h2 id="acceso" class="font-display text-xl font-medium">Acceso</h2>
     <div class="mt-3 flex flex-col gap-2 sm:flex-row">
-      <form method="post" onsubmit="return confirm('¿Generar una nueva contraseña para {{ u.first_name|default:u.username|escapejs }}? La anterior deja de funcionar.');">
+      <form method="post" data-confirmar="¿Generar una nueva contraseña para {{ u.first_name|default:u.username }}? La anterior deja de funcionar.">
         {% csrf_token %}<input type="hidden" name="accion" value="contrasena">
         <button type="submit" class="min-h-12 w-full rounded-full px-5 text-sm font-extrabold text-slate-800 ring-1 ring-stone-300 transition hover:ring-slate-900 sm:w-auto">Nueva contraseña</button>
       </form>
       {% if u.is_active %}
-        <form method="post" onsubmit="return confirm('¿Quitarle el acceso a {{ u.first_name|default:u.username|escapejs }}? Ya no podrá entrar al gestor.');">
+        <form method="post" data-confirmar="¿Quitarle el acceso a {{ u.first_name|default:u.username }}? Ya no podrá entrar al gestor.">
           {% csrf_token %}<input type="hidden" name="accion" value="quitar">
           <button type="submit" class="min-h-12 w-full rounded-full px-5 text-sm font-bold text-collar-700 ring-1 ring-collar-200 transition hover:bg-collar-50 sm:w-auto">Quitar acceso</button>
         </form>

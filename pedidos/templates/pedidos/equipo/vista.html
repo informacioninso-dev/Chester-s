@@ -1,8 +1,5 @@
 {% load static %}{# Vista del día (specs 011 y 012). Las acciones rápidas la vuelven a pintar entera con HTMX, y se refresca sola cada minuto. #}
-<div id="vista"
-     hx-get="{% url 'pedidos:equipo' %}?ver={{ vista }}{% if busqueda %}&amp;q={{ busqueda|urlencode }}{% endif %}"
-     hx-trigger="every 60s [document.visibilityState === 'visible' && !document.activeElement.matches('input, select, textarea')]"
-     hx-swap="outerHTML">
+<div id="vista" data-refrescar="{% url 'pedidos:equipo' %}?ver={{ vista }}{% if busqueda %}&amp;q={{ busqueda|urlencode }}{% endif %}">
   {% if aviso %}
     {# Aviso flotante (spec 012): abajo, a la vista, con "Deshacer" cuando se puede. Se oculta solo. #}
     <div role="status" class="aviso-flotante fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center gap-3 rounded-2xl py-2 pl-4 pr-2 text-sm font-semibold text-white shadow-2xl shadow-slate-900/30 {% if aviso.ok %}bg-slate-900{% else %}bg-collar-700{% endif %}">

@@ -68,3 +68,35 @@ class FrenoDeIntentos:
         if bloqueado(self.request, self.data.get("username", "")):
             raise ValidationError(MENSAJE, code="demasiados_intentos")
         return super().clean()
+
+
+# ---------------------------------------------------------------------------
+# Política de contenido (spec 018): solo scripts y estilos del propio sitio (más Google Fonts).
+# Es una segunda barrera contra XSS. El panel de Django queda fuera porque usa su propio JavaScript.
+# ---------------------------------------------------------------------------
+
+POLITICA = "; ".join([
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data:",
+    "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "form-action 'self' https://wa.me https://api.whatsapp.com",
+])
+
+
+class PoliticaDeContenido:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        from django.conf import settings
+
+        respuesta = self.get_response(request)
+        if not request.path.startswith("/" + settings.ADMIN_URL):
+            respuesta.setdefault("Content-Security-Policy", POLITICA)
+        return respuesta

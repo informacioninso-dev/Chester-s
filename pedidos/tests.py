@@ -732,10 +732,10 @@ class PasoAWhatsAppTests(TestCase):
 
     def test_boton_del_chat_siempre_visible(self):
         # Spec 009: nunca se esconde; sobre los formularios queda compacto (texto solo para lectores de pantalla).
-        html_portada = self.client.get(reverse("pedidos:index")).content.decode()
-        self.assertNotIn("zonas.push('inicio')", html_portada)
-        self.assertNotIn("'invisible'", html_portada)
-        self.assertIn("chatTexto.classList.toggle('sr-only', compacto)", html_portada)
+        script = (RAIZ / "pedidos/static/pedidos/js/sitio.js").read_text(encoding="utf-8")  # spec 018: fuera de la página
+        self.assertNotIn("zonas.push('inicio')", script)
+        self.assertNotIn("'invisible'", script)
+        self.assertIn("chatTexto.classList.toggle('sr-only', compacto)", script)
 
     def test_portada_primero_el_texto_y_boton_flotante_secundario(self):
         html_portada = self.client.get(reverse("pedidos:index")).content.decode()
@@ -966,7 +966,7 @@ class GestorDetalleTests(TestCase):
     def test_avanzar_y_cancelar_con_confirmacion(self):
         html = self.client.get(self.url).content.decode()
         self.assertIn("Confirmar pedido", html)
-        self.assertIn("return confirm(", html)
+        self.assertIn('data-confirmar="¿Cancelar el pedido de Rocky?', html)
         r = self.client.post(self.accion, {"tipo": "estado", "valor": "cancelado"})
         self.assertRedirects(r, self.url)
         self.p.refresh_from_db()
@@ -1178,8 +1178,11 @@ class GestorPulidoTests(TestCase):
 
     def test_la_vista_se_refresca_sola(self):
         r = self.client.get(self.url, {"ver": "todo"})
-        self.assertContains(r, "every 60s")
+        self.assertContains(r, 'data-refrescar="/equipo/?ver=todo"')
         self.assertContains(r, "Se actualiza solo")
+        script = (RAIZ / "pedidos/static/pedidos/js/equipo.js").read_text(encoding="utf-8")
+        self.assertIn("60000", script)
+        self.assertIn("details[open]", script)  # no cierra la receta que está leyendo la cocina
         parcial = self.client.get(self.url, {"ver": "todo"}, **HTMX)
         self.assertContains(parcial, 'id="vista"')
         self.assertNotContains(parcial, "<html")
@@ -1553,3 +1556,54 @@ class RecetaEnCocinaTests(TestCase):
 
     def test_el_detalle_tiene_el_ancla(self):
         self.assertContains(self.client.get(reverse("pedidos:equipo_pedido", args=[self.p.pk])), 'id="como-se-hace"')
+
+
+class SeguridadSpec018Tests(TestCase):
+    """Spec 018: CSP sin scripts en línea, Cocina sin datos de contacto y sesiones de 12 horas."""
+
+    def setUp(self):
+        cache.clear()
+        self.chef = persona("chef", "Cocina")
+        self.moto = persona("moto", "Reparto")
+        self.p = pedido(direccion_entrega="Casa 14, portón verde")
+
+    def test_csp_estricta_en_el_sitio_y_el_gestor(self):
+        from .seguridad import POLITICA
+        self.assertIn("script-src 'self'", POLITICA)
+        self.assertNotIn("unsafe", POLITICA)
+        self.client.force_login(self.moto)
+        paginas = [reverse("pedidos:index"), reverse("pedidos:privacidad"), reverse("pedidos:equipo"),
+                   reverse("pedidos:equipo_pedido", args=[self.p.pk])]
+        for url in paginas:
+            r = self.client.get(url)
+            self.assertEqual(r["Content-Security-Policy"], POLITICA, url)
+            html = r.content.decode()
+            self.assertNotRegex(html, r"\son[a-z]+=\"", url)          # sin manejadores en línea
+            self.assertNotIn("hx-on", html, url)
+            scripts_en_linea = re.findall(r"<script(?![^>]*\bsrc=)([^>]*)>", html)
+            self.assertTrue(all("ld+json" in s for s in scripts_en_linea), (url, scripts_en_linea))
+
+    def test_el_panel_queda_fuera_de_la_csp(self):
+        self.assertNotIn("Content-Security-Policy", self.client.get(reverse("admin:login")))
+
+    def test_cocina_no_ve_telefono_ni_direccion(self):
+        detalle = reverse("pedidos:equipo_pedido", args=[self.p.pk])
+        self.client.force_login(self.chef)
+        html = self.client.get(detalle).content.decode()
+        self.assertNotIn("0991234567", html)
+        self.assertNotIn("wa.me/", html)
+        self.assertNotIn("Casa 14", html)
+        self.assertIn("La dirección y el contacto de la familia los ven Atención y Reparto.", html)
+        self.assertNotIn("0991234567", self.client.get(reverse("pedidos:equipo_ficha", args=[self.p.perrito_id])).content.decode())
+        self.client.post(reverse("pedidos:equipo_accion", args=[self.p.pk]), {"tipo": "entrega", "direccion_entrega": "Otra"})
+        self.p.refresh_from_db()
+        self.assertEqual(self.p.direccion_entrega, "Casa 14, portón verde")
+        self.client.force_login(self.moto)
+        html = self.client.get(detalle).content.decode()
+        self.assertIn("0991234567", html)
+        self.assertIn("Casa 14", html)
+
+    def test_sesiones_de_12_horas_que_se_renuevan(self):
+        from django.conf import settings
+        self.assertEqual(settings.SESSION_COOKIE_AGE, 12 * 60 * 60)
+        self.assertTrue(settings.SESSION_SAVE_EVERY_REQUEST)

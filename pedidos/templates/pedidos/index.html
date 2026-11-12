@@ -39,11 +39,8 @@
           </p>
 
           <div class="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
-            {# Scroll suave al configurador vía HTMX (sin JS funciona igual gracias al ancla). #}
-            <a href="#configurador"
-               hx-on:click="event.preventDefault();
-                            htmx.find('#configurador').scrollIntoView({behavior: 'smooth', block: 'start'});
-                            setTimeout(() => htmx.find('#configurador-panel input:not([type=hidden])')?.focus({preventScroll: true}), 700);"
+            {# Scroll suave al configurador (sitio.js); sin JS funciona igual gracias al ancla. #}
+            <a href="#configurador" data-ir-al-configurador
                class="group inline-flex items-center gap-3 rounded-full bg-collar-600 px-7 py-4 text-base font-extrabold text-white shadow-lg shadow-collar-600/25 transition hover:-translate-y-0.5 hover:bg-collar-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-collar-600/30">
               Pedir su pastel
               <svg class="h-5 w-5 transition group-hover:translate-y-0.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4v12m0 0 5-5m-5 5-5-5"/></svg>
@@ -189,55 +186,5 @@
 
   {% include "pedidos/partials/chat.html" %}
 
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // Chat con Melloco (spec 005): abrir/cerrar, Esc, y tras cada respuesta bajar al último mensaje.
-      const chatPanel = document.getElementById('chat-panel');
-      const chatBoton = document.getElementById('chat-abrir');
-      const chatTexto = chatBoton.querySelector('[data-chat-texto]');
-      const chatAbierto = () => !chatPanel.classList.contains('hidden');
-      const chatAlFinal = () => {
-        const log = document.getElementById('chat-log');
-        if (log) log.scrollTop = log.scrollHeight;
-        chatPanel.querySelector('#chat-entrada input:not([type=hidden]), #chat-entrada button')?.focus({ preventScroll: true });
-      };
-      const mostrarChat = (abrir) => {
-        chatPanel.classList.toggle('hidden', !abrir);
-        chatPanel.classList.toggle('flex', abrir);
-        chatBoton.setAttribute('aria-expanded', String(abrir));
-        chatTexto.textContent = abrir ? 'Cerrar' : 'Pedir con Melloco';
-        actualizarBotonChat();
-        if (abrir) chatAlFinal(); else chatBoton.focus();
-      };
-      chatBoton.addEventListener('click', () => mostrarChat(!chatAbierto()));
-      chatPanel.querySelector('[data-chat-cerrar]').addEventListener('click', () => mostrarChat(false));
-      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && chatAbierto()) mostrarChat(false); });
-      document.body.addEventListener('htmx:afterSettle', (e) => { if (chatPanel.contains(e.target)) chatAlFinal(); });
-
-      // Botón del chat (spec 009): siempre visible. Mientras el configurador o la Ruleta ocupan el centro
-      // de la pantalla queda compacto (solo la carita de Melloco) para no tapar sus campos.
-      const zonasConFormulario = new Set();
-      function actualizarBotonChat() {
-        const compacto = !chatAbierto() && zonasConFormulario.size > 0;
-        chatTexto.classList.toggle('sr-only', compacto);
-        chatBoton.classList.toggle('pr-5', !compacto);
-        chatBoton.classList.toggle('pr-2.5', compacto);
-      }
-      const observador = new IntersectionObserver((entradas) => {
-        entradas.forEach((e) => (e.isIntersecting ? zonasConFormulario.add(e.target) : zonasConFormulario.delete(e.target)));
-        actualizarBotonChat();
-      }, { rootMargin: '-35% 0px -35% 0px' });
-      ['configurador', 'ruleta'].forEach((id) => { const zona = document.getElementById(id); if (zona) observador.observe(zona); });
-
-      // Después de cada paso: si el panel quedó fuera de vista, súbelo; y mueve el foco al título.
-      document.body.addEventListener('htmx:afterSwap', (e) => {
-        const panel = e.detail.target;
-        if (!['configurador-panel', 'ruleta-panel'].includes(panel.id)) return;
-        if (panel.getBoundingClientRect().top < 64) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        const destino = panel.querySelector('[aria-invalid="true"]') || panel.querySelector('[data-foco]');
-        destino?.focus({ preventScroll: true });
-      });
-    });
-  </script>
 </body>
 </html>

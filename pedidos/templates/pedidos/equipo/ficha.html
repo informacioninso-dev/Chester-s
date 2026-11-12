@@ -10,11 +10,11 @@
   <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-collar-400">Ficha del perrito</p>
   <h1 id="ficha-titulo" class="mt-2 break-words font-display text-4xl font-medium tracking-tight">{{ perrito.nombre }}</h1>
   <p class="mt-2 break-words text-stone-300">
-    Familia de {{ perrito.familia|default:"—" }} · {{ perrito.telefono }}{% if perrito.raza %} · {{ perrito.raza }}{% endif %}{% if perrito.tamano %} · {{ perrito.get_tamano_display|lower }}{% endif %}
+    Familia de {{ perrito.familia|default:"—" }}{% if request.ve_contacto %} · {{ perrito.telefono }}{% endif %}{% if perrito.raza %} · {{ perrito.raza }}{% endif %}{% if perrito.tamano %} · {{ perrito.get_tamano_display|lower }}{% endif %}
   </p>
   <div class="mt-5 flex flex-wrap gap-2">
-    <a href="{{ perrito.url_whatsapp_cliente }}" target="_blank" rel="noopener"
-       class="inline-flex min-h-11 items-center rounded-full bg-collar-600 px-5 text-sm font-extrabold text-white transition hover:bg-collar-700">Escribir por WhatsApp<span class="sr-only"> (se abre en otra pestaña)</span></a>
+    {% if request.ve_contacto %}<a href="{{ perrito.url_whatsapp_cliente }}" target="_blank" rel="noopener"
+       class="inline-flex min-h-11 items-center rounded-full bg-collar-600 px-5 text-sm font-extrabold text-white transition hover:bg-collar-700">Escribir por WhatsApp<span class="sr-only"> (se abre en otra pestaña)</span></a>{% endif %}
   </div>
 
   <dl class="mt-6 grid gap-4 border-t border-white/10 pt-6 text-sm sm:grid-cols-3">

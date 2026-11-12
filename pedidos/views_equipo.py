@@ -96,6 +96,8 @@ def equipo_requerido(vista):
         if not es_del_equipo(request.user):
             return render(request, "pedidos/equipo/sin_acceso.html", status=403)
         request.grupos = grupos_de(request.user)
+        # Spec 018 (LOPDP): teléfono y dirección de las familias solo para quien los necesita.
+        request.ve_contacto = request.user.is_superuser or bool(request.grupos & {ATENCION, REPARTO})
         return vista(request, *args, **kwargs)
 
     return envoltura
@@ -381,6 +383,8 @@ def _aplicar(request, pedido):
         return True, "Asignación guardada."
 
     if tipo == "entrega":
+        if not request.ve_contacto:
+            return False, "La entrega la anotan Atención de pedidos y Reparto."
         direccion = request.POST.get("direccion_entrega", "").strip()[:300]
         hora_texto = request.POST.get("hora_entrega", "").strip()
         hora = None

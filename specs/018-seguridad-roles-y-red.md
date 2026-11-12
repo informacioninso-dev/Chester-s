@@ -1,6 +1,6 @@
 # 018 · Seguridad: roles, datos personales y red
 
-**Estado:** borrador
+**Estado:** en curso
 **Fecha:** 2026-11-12
 
 ## Qué y por qué
@@ -51,6 +51,22 @@ Revisión de seguridad pedida por el dueño (12-nov-2026) antes de abrir el gest
 10. Los respaldos manuales de hoy (`respaldo-antes-spec0xx.sqlite3`) tienen datos personales: rotarlos o borrarlos cuando exista el respaldo automático.
 11. El freno de ingreso usa la caché local. Sirve mientras gunicorn tenga un solo proceso (anotado en MEMORY).
 
+## Aprobado por el dueño (12-nov-2026)
+
+Los hallazgos 1, 3, 5, 6, 7, 8 y 10. Quedan fuera por ahora el 2 (respaldo automático) y el 4 (que Cocina y Reparto no confirmen ni cancelen).
+
 ## Criterios de aceptación
 
-Se definen al aprobar qué hallazgos se implementan.
+- [x] **CSP estricta** en el sitio y en el gestor: `script-src 'self'`, sin `unsafe-inline` ni `unsafe-eval`. Todo el JavaScript va en archivos propios (`sitio.js` y `equipo.js`), las confirmaciones usan `data-confirmar` y htmx funciona sin eval. El panel de Django queda fuera.
+- [x] **Cocina sin datos de contacto:** quien solo está en Cocina no ve el teléfono, la dirección ni el WhatsApp de la familia (ni en el pedido ni en la ficha), y no puede editar la entrega. Atención, Reparto y el administrador sí los ven.
+- [x] **Sesiones de 12 horas** que se renuevan con el uso.
+- [x] **El refresco automático no cierra la receta abierta** (ajuste que salió al quitar el eval de htmx).
+- [ ] **Red propia:** `chesters-web` deja la red de Licitar. Caddy se conecta a la red `chesters_proxy`, y el compose de Licitar la declara para que se mantenga.
+- [ ] **HSTS de 1 año** en producción (`DJANGO_HSTS_SECONDS`).
+- [ ] **Respaldos manuales de hoy eliminados**, porque tienen datos personales.
+- [ ] **Servidor reiniciado** con el kernel nuevo, y Licitar y Chester’s respondiendo 200 después.
+
+## Resultado parcial
+
+- **147 tests:** 4 nuevos en `SeguridadSpec018Tests`.
+- **Probado en Chrome** con la CSP activa: portada, configurador, chat, acciones rápidas del gestor y confirmación de cancelar. Hubo **0 bloqueos de la política** y 0 errores de JavaScript.

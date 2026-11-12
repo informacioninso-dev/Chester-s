@@ -43,7 +43,7 @@
           <button type="submit" class="min-h-12 w-full rounded-full bg-collar-600 px-6 font-extrabold text-white transition hover:bg-collar-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-collar-600/30">{{ siguiente.1 }}</button>
         </form>
       {% endif %}
-      <form method="post" action="{% url 'pedidos:equipo_accion' p.pk %}" onsubmit="return confirm('¿Cancelar el pedido de {{ p.nombre_perro|escapejs }}? Esto no se puede deshacer desde el gestor.');">
+      <form method="post" action="{% url 'pedidos:equipo_accion' p.pk %}" data-confirmar="¿Cancelar el pedido de {{ p.nombre_perro }}? Esto no se puede deshacer desde el gestor.">
         {% csrf_token %}<input type="hidden" name="tipo" value="estado"><input type="hidden" name="valor" value="cancelado">
         <button type="submit" class="min-h-12 w-full rounded-full px-6 text-sm font-bold text-slate-500 ring-1 ring-stone-200 transition hover:text-collar-700 hover:ring-collar-200">Cancelar pedido</button>
       </form>
@@ -125,6 +125,7 @@
 {# Entrega. #}
 <section aria-labelledby="entrega-titulo" class="mt-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-stone-200 sm:p-6">
   <h2 id="entrega-titulo" class="font-display text-xl font-medium">Entrega</h2>
+  {% if request.ve_contacto %}
   <form method="post" action="{% url 'pedidos:equipo_accion' p.pk %}" class="mt-3 grid gap-4 sm:grid-cols-[1fr_10rem]">
     {% csrf_token %}<input type="hidden" name="tipo" value="entrega">
     <div>
@@ -142,6 +143,10 @@
       <span class="text-xs text-slate-500">Se coordina con la familia por WhatsApp.</span>
     </div>
   </form>
+  {% else %}
+    <p class="mt-2">{% if p.hora_entrega %}Sale a las <strong>{{ p.hora_entrega|time:"H:i" }}</strong>.{% else %}Todavía sin hora de entrega.{% endif %}</p>
+    <p class="mt-1 text-sm text-slate-500">La dirección y el contacto de la familia los ven Atención y Reparto.</p>
+  {% endif %}
 </section>
 
 {# Cobro (spec 015): aparte del estado; puede haber un anticipo. #}
@@ -180,10 +185,12 @@
 {# Familia y ficha. #}
 <section aria-labelledby="familia-titulo" class="mt-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-stone-200 sm:p-6">
   <h2 id="familia-titulo" class="font-display text-xl font-medium">Familia</h2>
-  <p class="mt-2 break-words">{{ p.nombre_cliente }} · {{ p.telefono }}</p>
+  <p class="mt-2 break-words">{{ p.nombre_cliente }}{% if request.ve_contacto %} · {{ p.telefono }}{% endif %}</p>
   <div class="mt-4 flex flex-wrap gap-2">
+    {% if request.ve_contacto %}
     <a href="{{ p.url_whatsapp_cliente }}" target="_blank" rel="noopener"
        class="inline-flex min-h-11 items-center rounded-full bg-collar-600 px-5 text-sm font-extrabold text-white transition hover:bg-collar-700">Escribir por WhatsApp<span class="sr-only"> (se abre en otra pestaña)</span></a>
+    {% endif %}
     {% if p.perrito_id %}
       <a href="{% url 'pedidos:equipo_ficha' p.perrito_id %}"
          class="inline-flex min-h-11 items-center rounded-full px-5 text-sm font-bold text-slate-800 ring-1 ring-stone-300 transition hover:ring-slate-900">Ficha de {{ p.nombre_perro }}</a>
