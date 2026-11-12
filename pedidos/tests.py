@@ -803,6 +803,12 @@ class GestorAccesoTests(TestCase):
     def test_no_se_indexa(self):
         self.assertContains(self.client.get(reverse("robots")), "Disallow: /equipo/")
 
+    def test_enlace_al_panel_solo_para_quien_puede_entrar(self):
+        self.client.force_login(persona("chef", "Cocina"))
+        self.assertNotContains(self.client.get(self.url), 'href="/admin/"')
+        self.client.force_login(persona("jefe", is_superuser=True, is_staff=True))
+        self.assertContains(self.client.get(self.url), 'href="/admin/"')
+
 
 class GestorPedidosTests(TestCase):
     url = reverse("pedidos:equipo")

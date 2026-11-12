@@ -16,8 +16,9 @@
   <button type="submit" class="min-h-11 shrink-0 rounded-full bg-slate-900 px-5 text-sm font-bold text-white transition hover:bg-slate-700">Buscar</button>
 </form>
 
-<nav aria-label="Estados" class="-mx-4 mt-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-  <ul class="flex w-max gap-2 pb-1">
+{# Celular: una fila que se desliza con el dedo, sin barra. Tablet y computador: las pestañas bajan de línea. #}
+<nav aria-label="Estados" class="sin-barra -mx-4 mt-4 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0">
+  <ul class="flex w-max gap-2 pb-1 sm:w-auto sm:flex-wrap">
     {% for t in pestanas %}
       <li>
         <a href="?ver={{ t.clave }}{% if busqueda %}&amp;q={{ busqueda|urlencode }}{% endif %}" {% if t.actual %}aria-current="page"{% endif %}
