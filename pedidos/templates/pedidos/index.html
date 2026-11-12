@@ -173,12 +173,36 @@
     </section>
   </main>
 
+  {% include "pedidos/partials/chat.html" %}
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // Tras confirmar el pedido, el servidor dispara este evento con la URL de WhatsApp.
       document.body.addEventListener('abrirWhatsapp', (e) => {
         setTimeout(() => { window.location.href = e.detail.url; }, 900);
       });
+
+      // Chat con Melloco (spec 005): abrir/cerrar, Esc, y tras cada respuesta bajar al último mensaje.
+      const chatPanel = document.getElementById('chat-panel');
+      const chatBoton = document.getElementById('chat-abrir');
+      const chatTexto = chatBoton.querySelector('[data-chat-texto]');
+      const chatAbierto = () => !chatPanel.classList.contains('hidden');
+      const chatAlFinal = () => {
+        const log = document.getElementById('chat-log');
+        if (log) log.scrollTop = log.scrollHeight;
+        chatPanel.querySelector('#chat-entrada input:not([type=hidden]), #chat-entrada button')?.focus({ preventScroll: true });
+      };
+      const mostrarChat = (abrir) => {
+        chatPanel.classList.toggle('hidden', !abrir);
+        chatPanel.classList.toggle('flex', abrir);
+        chatBoton.setAttribute('aria-expanded', String(abrir));
+        chatTexto.textContent = abrir ? 'Cerrar chat' : 'Pedir por chat';
+        if (abrir) chatAlFinal(); else chatBoton.focus();
+      };
+      chatBoton.addEventListener('click', () => mostrarChat(!chatAbierto()));
+      chatPanel.querySelector('[data-chat-cerrar]').addEventListener('click', () => mostrarChat(false));
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && chatAbierto()) mostrarChat(false); });
+      document.body.addEventListener('htmx:afterSettle', (e) => { if (chatPanel.contains(e.target)) chatAlFinal(); });
 
       // Después de cada paso: si el panel quedó fuera de vista, súbelo; y mueve el foco al título.
       document.body.addEventListener('htmx:afterSwap', (e) => {

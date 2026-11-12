@@ -1,0 +1,17 @@
+{% if m.de == "cliente" %}
+  <div class="aparecer flex justify-end">
+    <p class="max-w-[85%] break-words rounded-2xl rounded-br-md bg-slate-900 px-4 py-2.5 text-sm leading-relaxed text-white"><span class="sr-only">Tú: </span>{{ m.texto }}</p>
+  </div>
+{% elif m.resumen %}
+  <div class="aparecer flex justify-start">
+    <dl class="grid max-w-[85%] grid-cols-[auto,1fr] gap-x-4 gap-y-1.5 rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm shadow-sm ring-1 ring-stone-200">
+      {% for etiqueta, valor in m.resumen.items %}
+        <dt class="text-slate-500">{{ etiqueta }}</dt><dd class="break-words font-bold text-slate-900">{{ valor }}</dd>
+      {% endfor %}
+    </dl>
+  </div>
+{% else %}
+  <div class="aparecer flex justify-start">
+    <p class="max-w-[85%] break-words rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed shadow-sm ring-1 {% if m.error %}bg-collar-50 text-collar-800 ring-collar-200{% else %}bg-white text-slate-800 ring-stone-200{% endif %}"><span class="sr-only">Melloco: </span>{{ m.texto }}</p>
+  </div>
+{% endif %}

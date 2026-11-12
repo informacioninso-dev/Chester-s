@@ -369,7 +369,7 @@ class RendimientoTests(TestCase):
         for archivo in ("logo-640.webp", "logo.webp", "chester-avatar-96.webp", "chester-avatar.webp"):
             self.assertContains(r, f"/static/pedidos/img/{archivo}")
             self.assertTrue((RAIZ / "pedidos/static/pedidos/img" / archivo).exists(), archivo)
-        self.assertContains(r, 'type="image/webp"', count=3)
+        self.assertContains(r, 'type="image/webp"', count=4)  # menú, portada, historia y chat
         self.assertContains(r, "/static/pedidos/img/logo.jpg")
 
     def test_produccion_usa_estaticos_con_hash_y_whitenoise(self):
@@ -418,7 +418,7 @@ class SeoTests(TestCase):
         self.assertEqual(r["Content-Type"], "text/plain; charset=utf-8")
         texto = r.content.decode()
         for linea in ("User-agent: *", "Disallow: /api/", "Disallow: /configurador/",
-                      "Disallow: /ruleta/", "Sitemap: http://testserver/sitemap.xml"):
+                      "Disallow: /ruleta/", "Disallow: /chat/", "Sitemap: http://testserver/sitemap.xml"):
             self.assertIn(linea, texto)
         self.assertNotIn("admin", texto)  # no revelar la ruta del panel
 
@@ -438,3 +438,132 @@ class SeoTests(TestCase):
         self.assertEqual(datos["url"], "http://testserver/")
         self.assertEqual(datos["telephone"], "+593991112233")
         self.assertTrue(datos["logo"].startswith("http://testserver/static/"))
+
+
+# ---------------------------------------------------------------------------
+# Spec 005 · Chat de pedidos
+# ---------------------------------------------------------------------------
+
+class ChatTests(TestCase):
+    url = reverse("pedidos:chat")
+
+    def setUp(self):
+        cache.clear()
+
+    def responder(self, campo, valor=None, **datos):
+        cuerpo = {"campo": campo, **datos}
+        if valor is not None:
+            cuerpo[campo] = valor
+        return self.client.post(self.url, cuerpo, **HTMX)
+
+    def test_portada_tiene_el_boton_y_el_chat_con_el_saludo(self):
+        r = self.client.get(reverse("pedidos:index"))
+        self.assertContains(r, 'id="chat-abrir"')
+        self.assertContains(r, "Pedir por chat")
+        self.assertContains(r, 'role="log"')
+        self.assertContains(r, "¿Cómo se llama tu perrito?")
+        self.assertContains(r, 'name="campo" value="nombre_perro"')
+
+    def test_empezar_de_nuevo(self):
+        r = self.client.get(self.url)
+        self.assertContains(r, 'id="chat-log"')
+        self.assertContains(r, "Soy Melloco")
+        self.assertNotContains(r, "Empezar de nuevo")
+
+    def test_pregunta_en_orden_y_conserva_las_respuestas(self):
+        r = self.responder("nombre_perro", "Rocky")
+        self.assertContains(r, "<span class=\"sr-only\">Tú: </span>Rocky", html=False)
+        self.assertContains(r, "¿Qué día celebran a Rocky?")
+        self.assertContains(r, 'hx-swap-oob="true"')
+        self.assertContains(r, 'name="campo" value="fecha_cumple"')
+        self.assertContains(r, '<input type="hidden" name="nombre_perro" value="Rocky">', html=False)
+        self.assertContains(r, 'type="date"')
+
+        r = self.responder("fecha_cumple", "2099-12-15", nombre_perro="Rocky")
+        self.assertContains(r, "15 de diciembre de 2099")
+        self.assertContains(r, 'name="receta" value="carne_pure"')
+        self.assertContains(r, 'name="receta" value="manzana_zanahoria_yogur"')
+
+        base = {"nombre_perro": "Rocky", "fecha_cumple": "2099-12-15"}
+        r = self.responder("receta", "carne_pure", **base)
+        self.assertContains(r, "Carne y puré")
+        self.assertContains(r, 'name="estilo" value="huesito"')
+
+        base["receta"] = "carne_pure"
+        r = self.responder("estilo", "redondo", **base)
+        self.assertContains(r, "¿Y tú cómo te llamas?")
+
+        base["estilo"] = "redondo"
+        r = self.responder("nombre_cliente", "Ana", **base)
+        self.assertContains(r, "Gracias, Ana.")
+        self.assertContains(r, 'type="tel"')
+
+        base["nombre_cliente"] = "Ana"
+        r = self.responder("telefono", "099 123 4567", **base)
+        self.assertContains(r, "Así queda el pedido:")
+        self.assertContains(r, "<dt class=\"text-slate-500\">Forma</dt>", html=False)
+        self.assertContains(r, 'name="acepta_datos"')
+        self.assertContains(r, 'href="/privacidad/"')
+        self.assertContains(r, 'name="sitio_web"')
+
+    def test_respuesta_invalida_explica_y_repite_la_pregunta(self):
+        r = self.responder("nombre_perro", "")
+        self.assertContains(r, "¿Cómo se llama tu perrito?")
+        self.assertContains(r, 'name="campo" value="nombre_perro"')
+
+        r = self.responder("fecha_cumple", "2001-01-01", nombre_perro="Rocky")
+        self.assertContains(r, "Elige una fecha de hoy en adelante.")
+        self.assertContains(r, 'name="campo" value="fecha_cumple"')
+        self.assertNotContains(r, 'name="fecha_cumple" value="2001-01-01"')
+
+        r = self.responder("receta", "chocolate", nombre_perro="Rocky", fecha_cumple="2099-12-15")
+        self.assertContains(r, 'name="campo" value="receta"')
+
+    def test_escapa_lo_que_escribe_la_persona(self):
+        r = self.responder("nombre_perro", "<script>alert(1)</script>")
+        self.assertNotContains(r, "<script>alert(1)</script>")
+        self.assertContains(r, "&lt;script&gt;")
+
+    @override_settings(CHESTERS_WHATSAPP="593991112233")
+    def test_confirmar_guarda_y_abre_whatsapp_con_el_mismo_mensaje(self):
+        with mock.patch("pedidos.views.notificar_binn") as notificar:
+            r = self.responder("acepta_datos", "on", **{k: v for k, v in PEDIDO.items() if k not in ("paso", "acepta_datos")})
+        self.assertEqual(r.status_code, 200)
+        c = Cotizacion.objects.get()
+        self.assertEqual((c.nombre_perro, c.telefono, c.receta), ("Rocky", "0991234567", "carne_pure"))
+        notificar.assert_called_once_with(c)
+        url = json.loads(r["HX-Trigger-After-Settle"])["abrirWhatsapp"]["url"]
+        self.assertTrue(url.startswith("https://wa.me/593991112233?text="))
+        self.assertIn(quote_mensaje("Hola Melloco, quiero confirmar el pastel de carne y puré"), url)
+        self.assertContains(r, "Abrir WhatsApp")
+        self.assertContains(r, "Hacer otro pedido")
+
+    def test_sin_autorizacion_no_guarda(self):
+        datos = {k: v for k, v in PEDIDO.items() if k not in ("paso", "acepta_datos")}
+        r = self.responder("acepta_datos", None, **datos)
+        self.assertContains(r, "Marca la casilla de autorización")
+        self.assertEqual(Cotizacion.objects.count(), 0)
+
+    def test_campo_trampa_no_guarda(self):
+        datos = {k: v for k, v in PEDIDO.items() if k not in ("paso", "acepta_datos")}
+        r = self.responder("acepta_datos", "on", sitio_web="spam", **datos)
+        self.assertIn("abrirWhatsapp", r["HX-Trigger-After-Settle"])
+        self.assertEqual(Cotizacion.objects.count(), 0)
+
+    @override_settings(CHESTERS_LIMITE_ENVIOS=1)
+    def test_comparte_el_limite_con_el_configurador(self):
+        self.client.post(reverse("pedidos:confirmar"), PEDIDO, **HTMX)
+        datos = {k: v for k, v in PEDIDO.items() if k not in ("paso", "acepta_datos")}
+        r = self.responder("acepta_datos", "on", **datos)
+        self.assertEqual(r.status_code, 429)
+        self.assertContains(r, "Recibí varios pedidos seguidos", status_code=429)
+        self.assertEqual(Cotizacion.objects.count(), 1)
+
+    def test_sin_htmx_vuelve_a_la_portada(self):
+        r = self.client.post(self.url, {"campo": "nombre_perro", "nombre_perro": "Rocky"})
+        self.assertRedirects(r, reverse("pedidos:index"))
+
+
+def quote_mensaje(texto):
+    from urllib.parse import quote
+    return quote(texto)

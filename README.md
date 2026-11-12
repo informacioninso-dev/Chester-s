@@ -1,6 +1,6 @@
 # Chester's · Pasteles para perritos
 
-Landing page + configurador de pedidos en una sola página (Django + HTMX + Tailwind).
+Landing page + configurador de pedidos y chat con Melloco en una sola página (Django + HTMX + Tailwind).
 
 ## Arrancar en local
 
@@ -58,7 +58,7 @@ Eventos: `lead_cumple.creado` y `cotizacion.creado`. Si Binn responde 2xx, el re
 pedidos/
   models.py      Cotizacion, LeadCumple (+ campos de sincronización y consentimiento LOPDP)
   forms.py       PedidoForm (validación por pasos), LeadCumpleForm
-  views.py       index, configurador (pasos HTMX), confirmar_pedido, registrar_lead, API Binn
+  views.py       index, configurador (pasos HTMX), confirmar_pedido, chat, registrar_lead, robots.txt, API Binn
   crm.py         webhook a Binn (no bloquea la respuesta)
   templates/pedidos/index.html · privacidad.html
   templates/pedidos/partials/  head.html · configurador.html · pedido_confirmado.html · ruleta.html

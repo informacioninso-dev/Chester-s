@@ -20,9 +20,10 @@ python manage.py test pedidos      # debe pasar antes de cada commit
 
 - `pedidos/models.py` — `Cotizacion`, `LeadCumple` (heredan `SincronizableCRM`)
 - `pedidos/forms.py` — `PedidoForm` (por pasos), `LeadCumpleForm`
-- `pedidos/views.py` — landing, pasos HTMX del configurador, ruleta, API Binn
+- `pedidos/views.py` — landing, pasos HTMX del configurador, chat con Melloco, ruleta, robots.txt, API Binn
 - `pedidos/crm.py` — webhook a Binn en hilo aparte
-- `pedidos/templates/pedidos/partials/` — fragmentos que devuelve HTMX
+- `pedidos/templates/pedidos/partials/` — fragmentos que devuelve HTMX (`chat_*.html` es el chat)
+- `assets/tailwind.css` + `tailwind.config.js` — estilos; el CSS compilado se versiona (ver README)
 
 ## Reglas
 
@@ -31,6 +32,7 @@ python manage.py test pedidos      # debe pasar antes de cada commit
 - La integración con Binn nunca debe bloquear ni romper la respuesta al cliente.
 - Configuración sensible solo por variables de entorno (ver README).
 - No agregar dependencias sin justificarlo en la spec.
+- Si cambias clases de Tailwind en plantillas o `forms.py`, regenera `chesters.css` (ver README) antes del commit.
 
 ## Flujo: Spec Driven Development (mínimo)
 

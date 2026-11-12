@@ -163,6 +163,7 @@ def _contexto_index():
             "lead_ok": None,
             "whatsapp": settings.CHESTERS_WHATSAPP,
             "dias_regalo": settings.CHESTERS_DIAS_REGALO,
+            **contexto_chat_inicial(),
             "hoy": timezone.localdate(),
         }
     )
@@ -208,6 +209,7 @@ def robots_txt(request):
         "Disallow: /api/",
         "Disallow: /configurador/",
         "Disallow: /ruleta/",
+        "Disallow: /chat/",
         "",
         f"Sitemap: {request.build_absolute_uri(reverse('sitemap'))}",
     ]
@@ -254,6 +256,24 @@ def configurador(request):
     return _render_parcial_o_pagina(request, "pedidos/partials/configurador.html", ctx)
 
 
+def _guardar_cotizacion(request, form):
+    """Guarda un pedido válido (configurador o chat) y avisa a Binn.
+
+    Devuelve None si esta conexión superó el límite de envíos. Si llenó el campo
+    trampa, devuelve la cotización sin guardarla: al bot se le responde igual.
+    """
+    limite = LimiteEnvios(request, "pedido")
+    if limite.superado():
+        return None
+    limite.sumar()
+    if es_bot(request):
+        return form.save(commit=False)
+    with transaction.atomic():
+        cotizacion = form.save()
+        notificar_binn(cotizacion)
+    return cotizacion
+
+
 @require_POST
 def confirmar_pedido(request):
     """Paso 4: guarda la cotización en silencio y manda al cliente a WhatsApp."""
@@ -264,19 +284,11 @@ def confirmar_pedido(request):
         ctx = _contexto_configurador(paso_error, datos, form=form)
         return _render_parcial_o_pagina(request, "pedidos/partials/configurador.html", ctx)
 
-    limite = LimiteEnvios(request, "pedido")
-    if limite.superado():
+    cotizacion = _guardar_cotizacion(request, form)
+    if cotizacion is None:
         ctx = _contexto_configurador(PedidoForm.TOTAL_PASOS, datos)
         ctx.update(limite_envios="configurador", whatsapp=settings.CHESTERS_WHATSAPP)
         return _render_parcial_o_pagina(request, "pedidos/partials/configurador.html", ctx, status=429)
-    limite.sumar()
-
-    if es_bot(request):
-        cotizacion = form.save(commit=False)  # se responde igual, pero no se guarda ni se avisa a Binn
-    else:
-        with transaction.atomic():
-            cotizacion = form.save()
-            notificar_binn(cotizacion)
 
     wa_url = url_whatsapp(cotizacion)
     if not es_htmx(request):
@@ -323,6 +335,153 @@ def registrar_lead(request):
         "hoy": timezone.localdate(),
     }
     return _render_parcial_o_pagina(request, "pedidos/partials/ruleta.html", ctx)
+
+
+# ---------------------------------------------------------------------------
+# Chat de pedidos con Melloco (spec 005)
+#
+# Conversación guiada, sin IA. No hay sesión: las respuestas ya dadas viajan
+# como campos ocultos, igual que en el configurador, y se validan con PedidoForm.
+# ---------------------------------------------------------------------------
+
+# Orden de las preguntas y tipo de respuesta que espera cada una.
+PREGUNTAS_CHAT = {
+    "nombre_perro": "texto",
+    "fecha_cumple": "fecha",
+    "receta": "opciones",
+    "estilo": "opciones",
+    "nombre_cliente": "texto",
+    "telefono": "telefono",
+    "acepta_datos": "confirmar",
+}
+
+ETIQUETAS_CHAT = {
+    "nombre_perro": "Nombre de tu perrito",
+    "fecha_cumple": "Día de la celebración",
+    "nombre_cliente": "Tu nombre",
+    "telefono": "Tu WhatsApp",
+}
+
+LIMITE_CHAT = (
+    "Recibí varios pedidos seguidos desde tu conexión. Espera unos minutos y vuelve "
+    "a intentarlo, o escríbeme directo por WhatsApp."
+)
+
+
+def _textos_pregunta(campo, datos):
+    perro = datos.get("nombre_perro") or "tu perrito"
+    if campo == "nombre_perro":
+        return ["¡Guau! Soy Melloco, Director de Calidad de Chester’s 🐾",
+                "Te ayudo a pedir su pastel en un minuto. ¿Cómo se llama tu perrito?"]
+    if campo == "fecha_cumple":
+        return [f"¡Qué lindo nombre! ¿Qué día celebran a {perro}?"]
+    if campo == "receta":
+        return [f"Tenemos dos recetas caseras, horneadas a pedido. ¿Cuál le va a gustar a {perro}?"]
+    if campo == "estilo":
+        return ["¡Buena elección! ¿Qué forma prefieres para el pastel?"]
+    if campo == "nombre_cliente":
+        return ["Perfecto. ¿Y tú cómo te llamas?"]
+    if campo == "telefono":
+        nombre = datos.get("nombre_cliente", "")
+        return [f"Gracias, {nombre}. ¿A qué WhatsApp te escribimos para confirmar?"]
+    return []  # acepta_datos: se muestra el resumen
+
+
+def _respuesta_legible(campo, valor):
+    if campo == "receta":
+        return dict(Receta.choices).get(valor, valor)
+    if campo == "estilo":
+        return dict(Estilo.choices).get(valor, valor)
+    if campo == "fecha_cumple":
+        return _fecha_legible(valor)
+    if campo == "acepta_datos":
+        return "Confirmo el pedido"
+    return valor
+
+
+def _contexto_chat(campo, datos, mensajes, preguntar=True):
+    """Contexto para pintar las burbujas nuevas y el campo de respuesta de `campo`."""
+    mensajes = list(mensajes)
+    if preguntar:
+        mensajes += [{"de": "melloco", "texto": t} for t in _textos_pregunta(campo, datos)]
+    if preguntar and campo == "acepta_datos":
+        mensajes += [
+            {"de": "melloco", "texto": "Así queda el pedido:"},
+            {"de": "melloco", "resumen": {
+                "Para": datos.get("nombre_perro", ""),
+                "Fecha": _fecha_legible(datos.get("fecha_cumple")),
+                "Receta": dict(Receta.choices).get(datos.get("receta"), ""),
+                "Forma": dict(Estilo.choices).get(datos.get("estilo"), ""),
+                "WhatsApp": datos.get("telefono", ""),
+            }},
+            {"de": "melloco", "texto": "Si todo está bien, autoriza el uso de tus datos y confirma."},
+        ]
+    opciones = {"receta": Receta.choices, "estilo": Estilo.choices}.get(campo, [])
+    return {
+        "chat_mensajes": mensajes,
+        "chat_campo": campo,
+        "chat_tipo": PREGUNTAS_CHAT.get(campo, "fin"),
+        "chat_etiqueta": ETIQUETAS_CHAT.get(campo, ""),
+        "chat_opciones": opciones,
+        "chat_ocultos": [(k, v) for k, v in datos.items() if k not in (campo, "acepta_datos")],
+        "chat_inicio": campo == "nombre_perro" and not datos,
+        "hoy": timezone.localdate(),
+    }
+
+
+def contexto_chat_inicial():
+    return _contexto_chat("nombre_perro", {}, [])
+
+
+@require_http_methods(["GET", "POST"])
+def chat(request):
+    """GET: conversación nueva. POST: una respuesta (`campo` = pregunta respondida)."""
+    if request.method == "GET":
+        return render(request, "pedidos/partials/chat_inicio.html", contexto_chat_inicial())
+    if not es_htmx(request):
+        return HttpResponseRedirect(reverse("pedidos:index"))
+
+    datos = {c: request.POST.get(c, "").strip() for c in PREGUNTAS_CHAT if request.POST.get(c, "").strip()}
+    campo = request.POST.get("campo")
+    if campo not in PREGUNTAS_CHAT:
+        campo = "nombre_perro"
+
+    mensajes = []
+    if datos.get(campo):
+        mensajes.append({"de": "cliente", "texto": _respuesta_legible(campo, datos[campo])})
+
+    form = PedidoForm(datos)
+    form.is_valid()
+
+    # La respuesta recién dada no pasa la validación: se explica y se vuelve a preguntar.
+    if campo in form.errors:
+        mensajes.append({"de": "melloco", "texto": form.errors[campo][0], "error": True})
+        datos.pop(campo, None)
+        return render(request, "pedidos/partials/chat_paso.html",
+                      _contexto_chat(campo, datos, mensajes, preguntar=False))
+
+    siguiente = next((c for c in PREGUNTAS_CHAT if c in form.errors), None)
+    if siguiente:
+        if datos.get(siguiente):  # ya respondida pero dejó de ser válida (p. ej. pasó la fecha)
+            mensajes.append({"de": "melloco", "texto": form.errors[siguiente][0], "error": True})
+            datos.pop(siguiente)
+        return render(request, "pedidos/partials/chat_paso.html", _contexto_chat(siguiente, datos, mensajes))
+
+    # Todo válido, incluida la autorización: se guarda igual que en el configurador.
+    cotizacion = _guardar_cotizacion(request, form)
+    if cotizacion is None:
+        mensajes.append({"de": "melloco", "texto": LIMITE_CHAT, "error": True})
+        datos.pop("acepta_datos", None)
+        return render(request, "pedidos/partials/chat_paso.html",
+                      _contexto_chat("acepta_datos", datos, mensajes, preguntar=False), status=429)
+
+    wa_url = url_whatsapp(cotizacion)
+    mensajes.append({"de": "melloco", "texto": "¡Listo! Te abro WhatsApp con el pedido ya escrito: solo tienes que enviarlo."})
+    ctx = _contexto_chat("fin", {}, mensajes, preguntar=False)
+    ctx["chat_wa_url"] = wa_url
+    respuesta = render(request, "pedidos/partials/chat_paso.html", ctx)
+    respuesta["HX-Trigger-After-Settle"] = json.dumps({"abrirWhatsapp": {"url": wa_url}})
+    return respuesta
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,3 @@
+{# Respuesta a cada mensaje: burbujas nuevas (se agregan al historial) + campo de la siguiente pregunta (fuera de banda). #}
+{% for m in chat_mensajes %}{% include "pedidos/partials/chat_mensaje.html" %}{% endfor %}
+{% include "pedidos/partials/chat_entrada.html" with chat_oob=True %}

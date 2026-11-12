@@ -11,6 +11,7 @@ urlpatterns = [
     path("configurador/", views.configurador, name="configurador"),
     path("configurador/confirmar/", views.confirmar_pedido, name="confirmar"),
     path("ruleta/", views.registrar_lead, name="ruleta"),
+    path("chat/", views.chat, name="chat"),
     # API para el CRM Binn
     path("api/binn/leads/", views.api_leads, name="api_leads"),
     path("api/binn/cotizaciones/", views.api_cotizaciones, name="api_cotizaciones"),

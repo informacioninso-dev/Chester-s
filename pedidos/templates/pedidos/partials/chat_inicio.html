@@ -1,0 +1,6 @@
+{# Conversación nueva: historial con el saludo + campo de la primera pregunta. GET /chat/ lo devuelve para "Empezar de nuevo". #}
+<div id="chat-log" role="log" aria-live="polite" aria-label="Conversación con Melloco"
+     class="flex-1 space-y-2.5 overflow-y-auto overscroll-contain bg-stone-50 px-4 py-5">
+  {% for m in chat_mensajes %}{% include "pedidos/partials/chat_mensaje.html" %}{% endfor %}
+</div>
+{% include "pedidos/partials/chat_entrada.html" %}

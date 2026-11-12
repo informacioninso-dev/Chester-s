@@ -25,6 +25,7 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 - 2026-11-11 · HSTS arranca en 30 días, sin subdominios ni preload (difícil de revertir); sus advertencias de `check --deploy` están silenciadas a propósito mientras sigan apagados.
 - 2026-11-11 · htmx se sirve desde `pedidos/static/pedidos/js/` (2.0.4, hash igual al SRI publicado), no desde unpkg.
 - 2026-11-11 · SEO (spec 004): las URL absolutas (canónica, og:image, sitemap) salen del dominio de la petición, así que dependen de `DJANGO_ALLOWED_HOSTS` y, detrás de un proxy, de `DJANGO_BEHIND_PROXY=1` para que salgan con https. `robots.txt` no menciona el admin a propósito.
+- 2026-11-11 · Chat de pedidos (spec 005) **guiado y sin IA**: sin claves, sin costo por mensaje y sin enviar datos personales a otro proveedor. Valida con el mismo `PedidoForm` y guarda con `_guardar_cotizacion`, que también usa el configurador (mismo límite, campo trampa y aviso a Binn). Si algún día se le agrega IA, hay que actualizar la política de privacidad.
 
 ## Pendientes conocidos
 
