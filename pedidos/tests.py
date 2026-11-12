@@ -1525,3 +1525,31 @@ class FrenoDeIngresoTests(TestCase):
             self.intento(usuario="jefe", url=panel)
         r = self.intento(usuario="jefe", clave="clave-segura-123", url=panel)
         self.assertContains(r, "Demasiados intentos fallidos.")
+
+
+class RecetaEnCocinaTests(TestCase):
+    """Spec 017: en la vista Cocina la receta está a la mano."""
+
+    def setUp(self):
+        self.chef = persona("chef", "Cocina", first_name="Carla")
+        self.client.force_login(self.chef)
+        receta = Receta.objects.get(clave="carne_pure")
+        receta.ingredientes, receta.pasos = "250 g de carne molida\n1 papa", "Cocinar la carne sin sal\nHacer el puré"
+        receta.save()
+        self.p = pedido(estado="confirmado", nota_familia="Sin sal, por favor")
+
+    def test_ver_receta_en_la_fila_de_cocina(self):
+        html = self.client.get(reverse("pedidos:equipo"), {"ver": "cocina"}).content.decode()
+        self.assertIn("Ver receta", html)
+        self.assertIn("250 g de carne molida", html)
+        self.assertIn("Paso 2: </span>Hacer el puré", html)
+        self.assertIn("Nos contó la familia:</strong> “Sin sal, por favor”", html)
+        self.assertIn(reverse("pedidos:equipo_pedido", args=[self.p.pk]) + "#como-se-hace", html)
+
+    def test_las_otras_vistas_no_cambian(self):
+        html = self.client.get(reverse("pedidos:equipo"), {"ver": "todo"}).content.decode()
+        self.assertNotIn("Ver receta", html)
+        self.assertNotIn("#como-se-hace", html)
+
+    def test_el_detalle_tiene_el_ancla(self):
+        self.assertContains(self.client.get(reverse("pedidos:equipo_pedido", args=[self.p.pk])), 'id="como-se-hace"')

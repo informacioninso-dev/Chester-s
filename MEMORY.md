@@ -57,6 +57,8 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 
 - 2026-11-12 · Freno de ingreso (spec 016): 10 fallos por IP o 20 por usuario en 15 min bloquean 15 min. Usa la caché local: si gunicorn pasa a más de un proceso, hay que mover la caché a Redis o a la base, o el freno se reparte entre procesos.
 
+- 2026-11-12 · En la vista Cocina la receta está a la mano (spec 017): "Ver receta" se despliega en la misma fila y tocar el pedido abre el detalle en "Cómo se hace". Pedido del dueño: en la cocina lo primero es cómo se hace.
+
 ## Pendientes conocidos
 
 - Revisar con un abogado el texto de `/privacidad/` (spec 001) y agregar razón social/RUC del responsable.

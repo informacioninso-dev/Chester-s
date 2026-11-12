@@ -1,0 +1,45 @@
+{# Spec 017: la receta a la mano en la vista Cocina. Se despliega sin cambiar de pantalla (sin JavaScript). #}
+<details class="group/receta mt-3 border-t border-stone-100 pt-2">
+  <summary class="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl px-1 text-sm font-extrabold text-slate-800 hover:text-collar-700 [&::-webkit-details-marker]:hidden">
+    <svg class="h-4 w-4 transition group-open/receta:rotate-90" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 5 5 5-5 5"/></svg>
+    <span class="group-open/receta:hidden">Ver receta</span><span class="hidden group-open/receta:inline">Ocultar receta</span>
+    <span class="font-normal text-slate-500">· {{ p.receta.nombre }} · {{ p.estilo.nombre }}</span>
+  </summary>
+  <div class="space-y-4 px-1 pb-1 pt-2 text-sm">
+    {% if p.perrito.no_le_gusta or p.nota_familia %}
+      <div class="rounded-2xl bg-collar-50 px-3 py-2.5 text-collar-800 ring-1 ring-collar-200">
+        {% if p.perrito.no_le_gusta %}<p class="break-words"><strong>Alergias de {{ p.nombre_perro }}:</strong> {{ p.perrito.no_le_gusta }}</p>{% endif %}
+        {% if p.nota_familia %}<p class="break-words {% if p.perrito.no_le_gusta %}mt-1{% endif %}"><strong>Nos contó la familia:</strong> “{{ p.nota_familia }}”</p>{% endif %}
+        {% if p.receta.contiene %}<p class="mt-1 break-words"><strong>Esta receta contiene:</strong> {{ p.receta.contiene }}</p>{% endif %}
+      </div>
+    {% endif %}
+    {% if p.receta.lista_ingredientes %}
+      <div>
+        <p class="text-xs font-extrabold uppercase tracking-[0.16em] text-slate-500">Ingredientes</p>
+        <ul class="mt-1.5 space-y-1">
+          {% for i in p.receta.lista_ingredientes %}<li class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-collar-600" aria-hidden="true"></span><span class="min-w-0 break-words">{{ i }}</span></li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+    {% if p.receta.lista_pasos %}
+      <div>
+        <p class="text-xs font-extrabold uppercase tracking-[0.16em] text-slate-500">Pasos</p>
+        <ol class="mt-1.5 space-y-1.5">
+          {% for paso in p.receta.lista_pasos %}<li class="flex gap-2.5"><span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-slate-900 text-xs font-extrabold text-white" aria-hidden="true">{{ forloop.counter }}</span><span class="min-w-0 break-words pt-0.5"><span class="sr-only">Paso {{ forloop.counter }}: </span>{{ paso }}</span></li>{% endfor %}
+        </ol>
+      </div>
+    {% endif %}
+    {% if p.estilo.lista_como_armarla %}
+      <div>
+        <p class="text-xs font-extrabold uppercase tracking-[0.16em] text-slate-500">Forma: {{ p.estilo.nombre }}</p>
+        <ol class="mt-1.5 space-y-1.5">
+          {% for paso in p.estilo.lista_como_armarla %}<li class="flex gap-2.5"><span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-crema-200 text-xs font-extrabold text-slate-900" aria-hidden="true">{{ forloop.counter }}</span><span class="min-w-0 break-words pt-0.5">{{ paso }}</span></li>{% endfor %}
+        </ol>
+      </div>
+    {% endif %}
+    {% if not p.receta.lista_ingredientes and not p.receta.lista_pasos %}
+      <p class="rounded-2xl bg-crema-50 px-3 py-2.5 text-slate-700 ring-1 ring-crema-200">Esta receta aún no tiene ingredientes ni pasos escritos. Atención de pedidos puede completarla en el Recetario.</p>
+    {% endif %}
+    {% if p.receta.notas %}<p class="whitespace-pre-line break-words text-slate-700"><strong>Notas:</strong> {{ p.receta.notas }}</p>{% endif %}
+  </div>
+</details>
