@@ -18,9 +18,9 @@
         <span translate="no" class="font-display text-xl font-semibold tracking-tight">Chester’s</span>
       </a>
       <nav class="hidden items-center gap-8 text-sm font-semibold text-slate-600 md:flex" aria-label="Principal">
-        <a href="#configurador" class="transition hover:text-slate-900">Pedir su pastel</a>
-        <a href="#ruleta" class="transition hover:text-slate-900">Ruleta de Melloco</a>
-        <a href="#historia" class="transition hover:text-slate-900">Nuestra historia</a>
+        <a href="#configurador" class="py-3 transition hover:text-slate-900">Pedir su pastel</a>
+        <a href="#ruleta" class="py-3 transition hover:text-slate-900">Ruleta de Melloco</a>
+        <a href="#historia" class="py-3 transition hover:text-slate-900">Nuestra historia</a>
       </nav>
       <a href="#configurador" class="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-slate-700">Pedir</a>
     </div>
@@ -48,7 +48,7 @@
               Pedir su pastel
               <svg class="h-5 w-5 transition group-hover:translate-y-0.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4v12m0 0 5-5m-5 5-5-5"/></svg>
             </a>
-            <a href="#historia" class="text-sm font-bold text-slate-700 underline decoration-stone-300 underline-offset-4 transition hover:decoration-slate-900">Conoce a Chester</a>
+            <a href="#historia" class="inline-block py-3 text-sm font-bold text-slate-700 underline decoration-stone-300 underline-offset-4 transition hover:decoration-slate-900">Conoce a Chester</a>
           </div>
 
           <div class="mt-14 flex max-w-xl items-center gap-5 border-t border-stone-200 pt-6 sm:gap-7">
@@ -177,10 +177,10 @@
       <footer class="border-t border-slate-900/10">
         <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 pb-28 pt-8 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <p>© {% now "Y" %} <span translate="no">Chester’s</span> · Pasteles para perritos</p>
-          <div class="flex gap-6 font-semibold">
-            <a href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener" class="hover:text-slate-900">WhatsApp</a>
-            <a href="#configurador" class="hover:text-slate-900">Pedir su pastel</a>
-            <a href="{% url 'pedidos:privacidad' %}" class="hover:text-slate-900">Privacidad</a>
+          <div class="-my-3 flex gap-6 font-semibold">
+            <a href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener" class="py-3 hover:text-slate-900">WhatsApp</a>
+            <a href="#configurador" class="py-3 hover:text-slate-900">Pedir su pastel</a>
+            <a href="{% url 'pedidos:privacidad' %}" class="py-3 hover:text-slate-900">Privacidad</a>
           </div>
         </div>
       </footer>
