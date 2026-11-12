@@ -29,6 +29,7 @@ Tests: `python manage.py test pedidos`
   - *Historial:* los entregados y cancelados.
 
   Cada persona entra a la vista de su grupo. Al tocar un pedido se abre su detalle: avanzar o cancelar, asignar (solo Atención), la dirección y hora de entrega, WhatsApp, la ficha y los últimos cambios.
+- **Recetario** (spec 013): las recetas y formas que se ofrecen a las familias, con lo que sigue la cocina (ingredientes, pasos, alérgenos y cómo armar cada forma). Solo lo marcado «Disponible» aparece en la página y en el chat. Lo que ya tiene pedidos no se borra, se pausa. Editan Atención de pedidos y el administrador; Cocina y Reparto solo leen.
 - **Perritos:** todas las fichas, con buscador. Cada ficha junta los pedidos y el cumpleaños de la Ruleta y muestra las favoritas. El equipo anota raza, tamaño, lo que le encanta, alergias y notas.
 
 **Usuarios** (los crea el administrador):

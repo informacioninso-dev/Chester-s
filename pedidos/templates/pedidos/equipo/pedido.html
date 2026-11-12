@@ -16,7 +16,7 @@
       {% if p.estado == 'nuevo' %}bg-collar-600 text-white{% elif p.estado == 'confirmado' %}bg-slate-900 text-white{% elif p.estado == 'en_preparacion' %}bg-crema-200 text-slate-900{% elif p.estado == 'entregado' %}bg-stone-200 text-slate-700{% else %}bg-stone-100 text-slate-500{% endif %}">{% if p.estado == 'en_preparacion' %}En cocina{% else %}{{ p.get_estado_display }}{% endif %}</span>
   </div>
   <h1 id="pedido-titulo" class="mt-1 break-words font-display text-4xl font-medium tracking-tight">Para {{ p.nombre_perro }}</h1>
-  <p class="mt-1 break-words text-slate-600">{{ p.get_receta_display }} · {{ p.get_estilo_display }}{% if p.perrito.raza %} · {{ p.perrito.raza }}{% endif %}{% if p.perrito.tamano %} · {{ p.perrito.get_tamano_display|lower }}{% endif %}</p>
+  <p class="mt-1 break-words text-slate-600">{{ p.receta.nombre }} · {{ p.estilo.nombre }}{% if p.perrito.raza %} · {{ p.perrito.raza }}{% endif %}{% if p.perrito.tamano %} · {{ p.perrito.get_tamano_display|lower }}{% endif %}</p>
 
   {# 2-4. Lo que hay que cuidar, primero. #}
   {% if p.perrito.no_le_gusta %}
@@ -50,6 +50,19 @@
     </div>
   {% endif %}
 </section>
+
+{# Cómo se hace (spec 013): la receta y la forma, con las alergias al lado. #}
+<div class="mt-6 flex items-end justify-between gap-3">
+  <h2 class="font-display text-2xl font-medium">Cómo se hace</h2>
+  <a href="{% url 'pedidos:equipo_recetario' %}" class="inline-flex min-h-11 items-center text-sm font-bold text-slate-600 underline-offset-4 hover:text-slate-900 hover:underline">Recetario</a>
+</div>
+{% if revisar_alergias %}
+  <div role="alert" class="mt-3 flex gap-3 rounded-2xl bg-collar-600 px-4 py-3 text-white">
+    <svg class="mt-0.5 h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 7v4m0 3h.01M8.6 3.3 1.9 15a1.6 1.6 0 0 0 1.4 2.4h13.4a1.6 1.6 0 0 0 1.4-2.4L11.4 3.3a1.6 1.6 0 0 0-2.8 0Z"/></svg>
+    <p class="min-w-0 break-words"><strong class="font-extrabold">Revisa antes de cocinar:</strong> esta receta contiene {{ p.receta.contiene }}, y {{ p.nombre_perro }} tiene {% if p.perrito.no_le_gusta %}alergias anotadas ({{ p.perrito.no_le_gusta }}){% else %}una nota de la familia (“{{ p.nota_familia }}”){% endif %}.</p>
+  </div>
+{% endif %}
+{% include "pedidos/equipo/como_se_hace.html" with receta=p.receta forma=p.estilo %}
 
 {# Quién lo hace. #}
 <section aria-labelledby="quien-titulo" class="mt-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-stone-200 sm:p-6">

@@ -49,6 +49,8 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 
 - 2026-11-12 · En el gestor, "En preparación" se muestra como **"En cocina"**: así lo dice el equipo. El modelo conserva el valor `en_preparacion`.
 
+- 2026-11-12 · Recetas y formas viven en el **Recetario** (spec 013), no en el código. Cada una tiene una `clave` fija que no cambia aunque se renombre: la usan el formulario, el chat y Binn. Las claves originales (`carne_pure`, `manzana_zanahoria_yogur`, `huesito`, `redondo`) se conservaron.
+
 ## Pendientes conocidos
 
 - Revisar con un abogado el texto de `/privacidad/` (spec 001) y agregar razón social/RUC del responsable.

@@ -14,7 +14,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Cotizacion, LeadCumple
+from .models import Cotizacion, Forma, LeadCumple, Receta
 
 HTMX = {"HTTP_HX_REQUEST": "true"}
 
@@ -170,7 +170,7 @@ class ConfirmarTests(TestCase):
     def test_si_falta_un_paso_anterior_vuelve_a_el(self):
         r = self.client.post(self.url, self.datos(estilo=""), **HTMX)
         self.assertContains(r, 'name="paso" value="3"')
-        self.assertContains(r, "Elige un estilo para continuar.")
+        self.assertContains(r, "Elige una forma para continuar.")
 
     def test_sin_htmx_redirige_a_whatsapp(self):
         r = self.client.post(self.url, self.datos())
@@ -571,7 +571,7 @@ class ChatTests(TestCase):
                                **{k: v for k, v in PEDIDO.items() if k not in ("paso", "acepta_datos")})
         self.assertEqual(r.status_code, 200)
         c = Cotizacion.objects.get()
-        self.assertEqual((c.nombre_perro, c.telefono, c.receta), ("Rocky", "0991234567", "carne_pure"))
+        self.assertEqual((c.nombre_perro, c.telefono, c.receta.clave), ("Rocky", "0991234567", "carne_pure"))
         notificar.assert_called_once_with(c)
         self.assertNotIn("HX-Trigger-After-Settle", r)
         url = enlace_whatsapp(r)
@@ -621,7 +621,8 @@ class EquipoYGestionTests(TestCase):
         from django.contrib.auth.models import Group, User
         self.pedido = Cotizacion.objects.create(
             nombre_cliente="Ana", telefono="0991234567", nombre_perro="Rocky",
-            fecha_cumple=datetime.date(2099, 12, 15), receta="carne_pure", estilo="huesito")
+            fecha_cumple=datetime.date(2099, 12, 15), receta=Receta.objects.get(clave="carne_pure"),
+            estilo=Forma.objects.get(clave="huesito"))
         self.lead = LeadCumple.objects.create(nombre_humano="Ana", nombre_perro="Luna",
                                               fecha_cumple=datetime.date(2021, 3, 10), telefono="0991234567")
         self.equipo = User.objects.create_user("vale", password="clave-de-prueba-123", is_staff=True)
@@ -762,10 +763,12 @@ def persona(usuario, *grupos, **extra):
     return u
 
 
-def pedido(nombre="Rocky", dias=5, estado="nuevo", telefono="0991234567", **extra):
+def pedido(nombre="Rocky", dias=5, estado="nuevo", telefono="0991234567", receta="carne_pure",
+           estilo="huesito", **extra):
     datos = {"nombre_cliente": "Ana", "telefono": telefono, "nombre_perro": nombre,
              "fecha_cumple": timezone.localdate() + datetime.timedelta(days=dias),
-             "receta": "carne_pure", "estilo": "huesito", "estado": estado, **extra}
+             "receta": Receta.objects.get(clave=receta), "estilo": Forma.objects.get(clave=estilo),
+             "estado": estado, **extra}
     return Cotizacion.objects.create(**datos)
 
 
@@ -1196,3 +1199,123 @@ class GestorPulidoTests(TestCase):
 
     def test_pantalla_vacia_con_melloco(self):
         self.assertContains(self.client.get(self.url), "pedidos/img/melloco.svg")
+
+
+class RecetarioTests(TestCase):
+    """Spec 013: recetas y formas administrables, lo que ve el cliente y lo que sigue la cocina."""
+
+    def setUp(self):
+        cache.clear()
+        self.ana = persona("ana", "Atención de pedidos")
+        self.chef = persona("chef", "Cocina", first_name="Carla")
+        self.client.force_login(self.ana)
+        self.lista = reverse("pedidos:equipo_recetario")
+
+    def crear_receta(self, **extra):
+        datos = {"nombre": "Pollo y arroz", "descripcion": "Suave y ligera.", "orden": 3, "contiene": "Pollo",
+                 "ingredientes": "200 g de pollo\n1 taza de arroz", "pasos": "Cocinar el pollo\nMezclar con arroz",
+                 "notas": "", **extra}
+        return self.client.post(reverse("pedidos:equipo_recetario_nuevo", args=["receta"]), datos)
+
+    def test_pestana_y_lista_con_lo_actual(self):
+        self.assertContains(self.client.get(reverse("pedidos:equipo")), f'href="{self.lista}"')
+        html = self.client.get(self.lista).content.decode()
+        for nombre in ("Carne y puré", "Manzana, zanahoria y yogur", "Huesito", "Redondo"):
+            self.assertIn(nombre, html)
+        self.assertIn("Disponible", html)
+        self.assertIn("Contiene: Lácteos (yogur)", html)
+
+    def test_crear_receta_nace_pausada_con_clave_fija(self):
+        r = self.crear_receta()
+        receta = Receta.objects.get(nombre="Pollo y arroz")
+        self.assertRedirects(r, reverse("pedidos:equipo_recetario_item", args=["receta", receta.pk]), fetch_redirect_response=False)
+        self.assertEqual(receta.clave, "pollo_y_arroz")
+        self.assertFalse(receta.disponible)
+        self.assertContains(self.client.get(r["Location"]), "Todavía no la ven los clientes")
+        self.crear_receta()
+        self.assertTrue(Receta.objects.filter(clave="pollo_y_arroz_2").exists())
+
+    def test_solo_lo_disponible_llega_al_cliente(self):
+        self.crear_receta()
+        paso2 = {**PEDIDO, "paso": 1, "ir_a": 2}
+        self.assertNotContains(self.client.post(reverse("pedidos:configurador"), paso2, **HTMX), "Pollo y arroz")
+        Receta.objects.filter(clave="pollo_y_arroz").update(disponible=True)
+        r = self.client.post(reverse("pedidos:configurador"), paso2, **HTMX)
+        self.assertContains(r, "Pollo y arroz")
+        self.assertContains(r, "Suave y ligera.")
+        chat = self.client.post(reverse("pedidos:chat"), {"campo": "fecha_cumple", "nombre_perro": "Rocky",
+                                                          "fecha_cumple": "2099-12-15"}, **HTMX)
+        self.assertContains(chat, 'name="receta" value="pollo_y_arroz"')
+
+    def test_pedido_con_receta_y_forma_nuevas_y_su_frase(self):
+        Receta.objects.create(nombre="Pollo y arroz", disponible=True)
+        Forma.objects.create(nombre="Corazón", frase_mensaje="en forma de corazón", disponible=True)
+        with mock.patch("pedidos.views.notificar_binn"):
+            r = self.client.post(reverse("pedidos:confirmar"),
+                                 {**PEDIDO, "receta": "pollo_y_arroz", "estilo": "corazon"}, **HTMX)
+        self.assertIn(quote_mensaje("pastel de pollo y arroz en forma de corazón"), enlace_whatsapp(r))
+        c = Cotizacion.objects.get()
+        self.assertEqual((c.to_crm()["receta"], c.to_crm()["estilo_nombre"]), ("pollo_y_arroz", "Corazón"))
+
+    def test_pausada_no_se_puede_pedir(self):
+        Receta.objects.filter(clave="carne_pure").update(disponible=False)
+        r = self.client.post(reverse("pedidos:confirmar"), PEDIDO, **HTMX)
+        self.assertContains(r, "Esa receta ya no está disponible.")
+        self.assertEqual(Cotizacion.objects.count(), 0)
+
+    def test_sin_nada_disponible_ofrece_whatsapp(self):
+        Receta.objects.update(disponible=False)
+        r = self.client.post(reverse("pedidos:configurador"), {**PEDIDO, "paso": 1, "ir_a": 2}, **HTMX)
+        self.assertContains(r, "no tenemos pasteles disponibles")
+        self.assertContains(r, "https://wa.me/")
+        chat = self.client.post(reverse("pedidos:chat"), {"campo": "fecha_cumple", "nombre_perro": "Rocky",
+                                                          "fecha_cumple": "2099-12-15"}, **HTMX)
+        self.assertContains(chat, "no tenemos pasteles disponibles")
+        self.assertContains(chat, "Enviar por WhatsApp")
+
+    def test_cocina_lee_pero_no_edita(self):
+        receta = Receta.objects.get(clave="carne_pure")
+        receta.pasos = "Cocinar la carne sin sal\nHacer el puré"
+        receta.save()
+        self.client.force_login(self.chef)
+        url = reverse("pedidos:equipo_recetario_item", args=["receta", receta.pk])
+        html = self.client.get(url).content.decode()
+        self.assertIn("Paso 1: </span>Cocinar la carne sin sal", html)
+        self.assertNotIn(">Editar</a>", html)
+        self.assertNotContains(self.client.get(self.lista), "Nueva receta")
+        self.client.post(url, {"nombre": "Otra cosa"})
+        receta.refresh_from_db()
+        self.assertEqual(receta.nombre, "Carne y puré")
+        r = self.client.get(reverse("pedidos:equipo_recetario_nuevo", args=["receta"]), follow=True)
+        self.assertContains(r, "Solo Atención de pedidos puede crear o editar el Recetario.")
+
+    def test_lo_usado_no_se_borra(self):
+        usado = pedido().receta
+        url = reverse("pedidos:equipo_recetario_item", args=["receta", usado.pk])
+        self.client.post(url, {"accion": "eliminar"})
+        self.assertTrue(Receta.objects.filter(pk=usado.pk).exists())
+        libre = Receta.objects.create(nombre="Libre")
+        self.client.post(reverse("pedidos:equipo_recetario_item", args=["receta", libre.pk]), {"accion": "eliminar"})
+        self.assertFalse(Receta.objects.filter(pk=libre.pk).exists())
+
+    def test_el_detalle_del_pedido_dice_como_se_hace_y_avisa_alergias(self):
+        receta = Receta.objects.get(clave="manzana_zanahoria_yogur")
+        receta.ingredientes, receta.pasos = "1 manzana\n2 cucharadas de yogur", "Rallar la manzana\nMezclar"
+        receta.save()
+        p = pedido(receta="manzana_zanahoria_yogur")
+        p.perrito.no_le_gusta = "No tolera la lactosa"
+        p.perrito.save()
+        html = self.client.get(reverse("pedidos:equipo_pedido", args=[p.pk])).content.decode()
+        self.assertIn("Cómo se hace", html)
+        self.assertIn("2 cucharadas de yogur", html)
+        self.assertIn("Paso 2: </span>Mezclar", html)
+        self.assertIn("Revisa antes de cocinar:", html)
+        self.assertIn("contiene Lácteos (yogur)", html)
+        sin_alergia = pedido("Luna", telefono="0987654321", receta="manzana_zanahoria_yogur")
+        self.assertNotContains(self.client.get(reverse("pedidos:equipo_pedido", args=[sin_alergia.pk])),
+                               "Revisa antes de cocinar:")
+
+    def test_lo_nuevo_va_al_final(self):
+        r = self.client.get(reverse("pedidos:equipo_recetario_nuevo", args=["receta"]))
+        self.assertContains(r, 'name="orden" value="3"', html=False)
+        self.assertNotContains(r, 'name="disponible" checked', html=False)

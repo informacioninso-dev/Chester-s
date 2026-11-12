@@ -20,14 +20,22 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from .crm import notificar_binn
 from .forms import LeadCumpleForm, PedidoForm
-from .models import Cotizacion, Estilo, LeadCumple, Receta
+from .models import Cotizacion, Forma, LeadCumple, Receta
 
 PASOS_NOMBRES = ["Datos", "Receta", "Forma", "Confirmar"]
 
-FRASE_ESTILO = {
-    Estilo.HUESITO: "en forma de huesito",
-    Estilo.REDONDO: "en forma redonda",
-}
+
+
+def _nombre_en_recetario(modelo, clave):
+    """Nombre de una receta o forma por su clave (lo que viaja en el formulario y en el chat)."""
+    if not clave:
+        return ""
+    return modelo.objects.filter(clave=clave).values_list("nombre", flat=True).first() or ""
+
+
+def _opciones(modelo):
+    """Recetas o formas que el cliente puede elegir hoy (spec 013)."""
+    return list(modelo.objects.filter(disponible=True).values_list("clave", "nombre"))
 
 
 # ---------------------------------------------------------------------------
@@ -105,8 +113,8 @@ def _contexto_configurador(paso, datos, form=None):
         resumen = {
             "nombre_perro": datos.get("nombre_perro", ""),
             "fecha": _fecha_legible(datos.get("fecha_cumple")),
-            "receta": dict(Receta.choices).get(datos.get("receta"), ""),
-            "estilo": dict(Estilo.choices).get(datos.get("estilo"), ""),
+            "receta": _nombre_en_recetario(Receta, datos.get("receta")),
+            "estilo": _nombre_en_recetario(Forma, datos.get("estilo")),
             "nota": datos.get("nota_familia", ""),
         }
     return {
@@ -116,8 +124,9 @@ def _contexto_configurador(paso, datos, form=None):
         "ocultos": ocultos,
         "resumen": resumen,
         "errores": form.errors if form.is_bound else {},
-        "recetas": Receta,
-        "estilos": Estilo,
+        "hay_recetas": Receta.objects.filter(disponible=True).exists(),
+        "hay_formas": Forma.objects.filter(disponible=True).exists(),
+        "whatsapp": settings.CHESTERS_WHATSAPP,
     }
 
 
@@ -134,8 +143,8 @@ def _fecha_legible(valor):
 
 
 def mensaje_whatsapp(cotizacion):
-    receta = cotizacion.get_receta_display().lower()
-    estilo = FRASE_ESTILO[cotizacion.estilo]
+    receta = cotizacion.receta.nombre.lower()
+    estilo = cotizacion.estilo.frase()
     fecha = _fecha_legible(cotizacion.fecha_cumple)
     return (
         f"Hola Melloco, quiero confirmar el pastel de {receta} {estilo} "
@@ -395,9 +404,9 @@ def _textos_pregunta(campo, datos):
 
 def _respuesta_legible(campo, valor):
     if campo == "receta":
-        return dict(Receta.choices).get(valor, valor)
+        return _nombre_en_recetario(Receta, valor) or valor
     if campo == "estilo":
-        return dict(Estilo.choices).get(valor, valor)
+        return _nombre_en_recetario(Forma, valor) or valor
     if campo == "fecha_cumple":
         return _fecha_legible(valor)
     if campo == "acepta_datos":
@@ -418,18 +427,24 @@ def _contexto_chat(campo, datos, mensajes, preguntar=True):
             {"de": "melloco", "resumen": {
                 "Para": datos.get("nombre_perro", ""),
                 "Fecha": _fecha_legible(datos.get("fecha_cumple")),
-                "Receta": dict(Receta.choices).get(datos.get("receta"), ""),
-                "Forma": dict(Estilo.choices).get(datos.get("estilo"), ""),
+                "Receta": _nombre_en_recetario(Receta, datos.get("receta")),
+                "Forma": _nombre_en_recetario(Forma, datos.get("estilo")),
                 **({"Nos contaste": datos["nota_familia"]} if datos.get("nota_familia") else {}),
                 "WhatsApp": datos.get("telefono", ""),
             }},
             {"de": "melloco", "texto": "Antes de que salga, yo mismo lo reviso. Si está todo bien, marca la autorización y confírmalo."},
         ]
-    opciones = {"receta": Receta.choices, "estilo": Estilo.choices}.get(campo, [])
+    opciones = {"receta": Receta, "estilo": Forma}.get(campo)
+    opciones = _opciones(opciones) if opciones else []
+    sin_opciones = preguntar and campo in ("receta", "estilo") and not opciones
+    if sin_opciones:  # el Recetario no tiene nada disponible: no se rompe, se ofrece WhatsApp
+        mensajes += [{"de": "melloco", "texto": "Uy, justo ahora no tenemos pasteles disponibles para pedir aquí. "
+                                                 "Escríbenos por WhatsApp y te ayudamos."}]
     return {
         "chat_mensajes": mensajes,
         "chat_campo": campo,
-        "chat_tipo": PREGUNTAS_CHAT.get(campo, "fin"),
+        "chat_tipo": "fin" if sin_opciones else PREGUNTAS_CHAT.get(campo, "fin"),
+        "chat_wa_url": f"https://wa.me/{settings.CHESTERS_WHATSAPP}" if sin_opciones else "",
         "chat_etiqueta": ETIQUETAS_CHAT.get(campo, ""),
         "chat_opciones": opciones,
         "chat_ocultos": [(k, v) for k, v in datos.items() if k not in (campo, "acepta_datos")],

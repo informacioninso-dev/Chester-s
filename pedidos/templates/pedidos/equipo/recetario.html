@@ -1,0 +1,9 @@
+{% extends "pedidos/equipo/base.html" %}
+{% block titulo %}Recetario{% endblock %}
+{% block contenido %}
+<h1 class="font-display text-3xl font-medium tracking-tight">Recetario</h1>
+<p class="mt-1 text-sm text-slate-600">Lo que ofrecemos a las familias y cómo lo hace la cocina. Solo lo <strong>disponible</strong> aparece en la página y en el chat.</p>
+
+{% include "pedidos/equipo/recetario_bloque.html" with titulo="Recetas" items=recetas tipo="receta" nueva="Nueva receta" %}
+{% include "pedidos/equipo/recetario_bloque.html" with titulo="Formas" items=formas tipo="forma" nueva="Nueva forma" %}
+{% endblock %}

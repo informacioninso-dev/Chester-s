@@ -1,0 +1,38 @@
+{# Un bloque del Recetario (recetas o formas). #}
+<section aria-labelledby="bloque-{{ tipo }}" class="mt-8">
+  <div class="flex items-center justify-between gap-3">
+    <h2 id="bloque-{{ tipo }}" class="font-display text-2xl font-medium">{{ titulo }}</h2>
+    {% if puede_editar %}
+      <a href="{% url 'pedidos:equipo_recetario_nuevo' tipo %}"
+         class="inline-flex min-h-11 items-center gap-2 rounded-full bg-slate-900 px-4 text-sm font-extrabold text-white transition hover:bg-slate-700">
+        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M10 4v12M4 10h12"/></svg>
+        {{ nueva }}
+      </a>
+    {% endif %}
+  </div>
+  <ul class="mt-3 space-y-2">
+    {% for item in items %}
+      <li>
+        <a href="{% url 'pedidos:equipo_recetario_item' tipo item.pk %}"
+           class="group flex items-center gap-4 rounded-2xl border-l-[6px] bg-white p-4 shadow-sm ring-1 ring-stone-200 transition hover:ring-slate-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-collar-600/20 {% if item.disponible %}border-l-collar-600{% else %}border-l-stone-300{% endif %}">
+          <span class="min-w-0 flex-1">
+            <span class="flex flex-wrap items-center gap-2">
+              <span class="truncate font-display text-lg font-medium group-hover:underline group-hover:underline-offset-4">{{ item.nombre }}</span>
+              <span class="rounded-full px-2 py-0.5 text-xs font-extrabold uppercase tracking-wide {% if item.disponible %}bg-slate-900 text-white{% else %}bg-stone-100 text-slate-500{% endif %}">{% if item.disponible %}Disponible{% else %}Pausada{% endif %}</span>
+            </span>
+            <span class="mt-0.5 block truncate text-sm text-slate-600">{{ item.descripcion|default:"Sin descripción para el cliente" }}</span>
+            <span class="mt-2 flex flex-wrap gap-1.5 text-xs font-bold">
+              <span class="rounded-full bg-stone-100 px-2.5 py-1 text-slate-700">{{ item.n_pedidos }} pedido{{ item.n_pedidos|pluralize }}</span>
+              {% if item.contiene %}<span class="max-w-full truncate rounded-full bg-collar-50 px-2.5 py-1 text-collar-800 ring-1 ring-collar-200">Contiene: {{ item.contiene }}</span>{% endif %}
+              {% if tipo == "receta" and not item.pasos %}<span class="rounded-full bg-crema-100 px-2.5 py-1 text-slate-800">Faltan los pasos</span>{% endif %}
+              {% if tipo == "forma" and not item.como_armarla %}<span class="rounded-full bg-crema-100 px-2.5 py-1 text-slate-800">Falta cómo armarla</span>{% endif %}
+            </span>
+          </span>
+          <svg class="h-5 w-5 shrink-0 text-slate-400" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 5 5 5-5 5"/></svg>
+        </a>
+      </li>
+    {% empty %}
+      <li class="rounded-3xl border border-dashed border-stone-300 bg-white/60 px-6 py-8 text-center text-sm text-slate-600">Aún no hay {{ titulo|lower }}.</li>
+    {% endfor %}
+  </ul>
+</section>

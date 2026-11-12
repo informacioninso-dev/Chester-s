@@ -9,20 +9,20 @@ from functools import wraps
 
 from django import forms
 from django.contrib import messages
-from django.contrib.admin.models import CHANGE, LogEntry
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION, LogEntry
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Count, F, Q
-from django.http import HttpResponseRedirect
+from django.db.models import Count, F, Max, Q
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from .forms import INPUT
-from .models import Cotizacion, EstadoPedido, Estilo, LeadCumple, Perrito, Receta
+from .models import Cotizacion, EstadoPedido, Forma, LeadCumple, Perrito, Receta
 
 ATENCION, COCINA, REPARTO = "Atención de pedidos", "Cocina", "Reparto"
 GRUPOS_EQUIPO = (ATENCION, COCINA, REPARTO)
@@ -155,7 +155,7 @@ def _registrar(request, obj, mensaje):
 
 
 def _pedidos():
-    return Cotizacion.objects.select_related("perrito", "cocinero", "repartidor")
+    return Cotizacion.objects.select_related("perrito", "cocinero", "repartidor", "receta", "estilo")
 
 
 def _filtro_vista(vista, user):
@@ -402,6 +402,8 @@ def pedido(request, pk):
         "cocina": _personas(COCINA),
         "reparto": _personas(REPARTO),
         "cambios": cambios,
+        # Spec 013: la receta declara alérgenos y el perrito tiene alergias o una nota de la familia.
+        "revisar_alergias": bool(p.receta.contiene and ((p.perrito and p.perrito.no_le_gusta) or p.nota_familia)),
     })
 
 
@@ -440,10 +442,11 @@ class FichaForm(forms.ModelForm):
         labels = {"tamano": "Tamaño", "le_encanta": "Le encanta", "no_le_gusta": "No le gusta / alergias"}
 
 
-def _favorita(pedidos_perrito, campo, opciones):
-    fila = (pedidos_perrito.exclude(estado=EstadoPedido.CANCELADO).values(campo)
-            .annotate(veces=Count("pk")).order_by("-veces", campo).first())
-    return {"nombre": dict(opciones)[fila[campo]], "veces": fila["veces"]} if fila else None
+def _favorita(pedidos_perrito, campo):
+    nombre = f"{campo}__nombre"
+    fila = (pedidos_perrito.exclude(estado=EstadoPedido.CANCELADO).values(nombre)
+            .annotate(veces=Count("pk")).order_by("-veces", nombre).first())
+    return {"nombre": fila[nombre], "veces": fila["veces"]} if fila else None
 
 
 @require_http_methods(["GET", "POST"])
@@ -464,15 +467,120 @@ def ficha(request, pk):
     else:
         form = FichaForm(instance=perrito)
 
-    pedidos_perrito = Cotizacion.objects.filter(perrito=perrito).select_related("cocinero", "repartidor")
+    pedidos_perrito = Cotizacion.objects.filter(perrito=perrito).select_related("cocinero", "repartidor", "receta", "estilo")
     cumple = LeadCumple.objects.filter(perrito=perrito).order_by("-creado_en").first()
     return render(request, "pedidos/equipo/ficha.html", {
         "perrito": perrito,
         "form": form,
         "guardado": guardado,
         "pedidos": pedidos_perrito.order_by("-fecha_cumple", "-creado_en"),
-        "receta_favorita": _favorita(pedidos_perrito, "receta", Receta.choices),
-        "forma_favorita": _favorita(pedidos_perrito, "estilo", Estilo.choices),
+        "receta_favorita": _favorita(pedidos_perrito, "receta"),
+        "forma_favorita": _favorita(pedidos_perrito, "estilo"),
         "cumple": cumple,
         "notas_familia": [p for p in pedidos_perrito.order_by("-creado_en") if p.nota_familia],
+    })
+
+
+# ---------------------------------------------------------------------------
+# Recetario (spec 013): recetas y formas, lo que ve el cliente y lo que sigue la cocina
+# ---------------------------------------------------------------------------
+
+def puede_editar_recetario(user, grupos):
+    return user.is_superuser or ATENCION in grupos
+
+
+def _campo(widget=forms.TextInput, **attrs):
+    return widget(attrs={"class": INPUT, **attrs})
+
+
+class RecetaForm(forms.ModelForm):
+    class Meta:
+        model = Receta
+        fields = ["nombre", "descripcion", "disponible", "orden", "contiene", "ingredientes", "pasos", "notas"]
+        widgets = {
+            "nombre": _campo(placeholder="Ej.: Pollo y arroz", autocomplete="off"),
+            "descripcion": _campo(placeholder="Ej.: Suave y ligera, ideal para estómagos sensibles."),
+            "orden": _campo(forms.NumberInput, min=0, inputmode="numeric"),
+            "contiene": _campo(placeholder="Ej.: Pollo, lácteos (yogur)"),
+            "ingredientes": _campo(forms.Textarea, rows=6, placeholder="200 g de carne molida\n1 papa mediana\n1 huevo"),
+            "pasos": _campo(forms.Textarea, rows=8, placeholder="Cocinar la carne sin sal\nHacer puré con la papa\nHornear 25 min a 180 °C"),
+            "notas": _campo(forms.Textarea, rows=3, placeholder="Sin sal, sin cebolla, sin ajo."),
+        }
+
+
+class FormaForm(forms.ModelForm):
+    class Meta:
+        model = Forma
+        fields = ["nombre", "descripcion", "frase_mensaje", "disponible", "orden", "como_armarla", "notas"]
+        widgets = {
+            "nombre": _campo(placeholder="Ej.: Corazón", autocomplete="off"),
+            "descripcion": _campo(placeholder="Ej.: Para los más cariñosos."),
+            "frase_mensaje": _campo(placeholder="Ej.: en forma de corazón"),
+            "orden": _campo(forms.NumberInput, min=0, inputmode="numeric"),
+            "como_armarla": _campo(forms.Textarea, rows=6, placeholder="Molde de corazón de 15 cm\nDesmoldar en frío\nDecorar el borde con puré"),
+            "notas": _campo(forms.Textarea, rows=3),
+        }
+
+
+TIPOS_RECETARIO = {
+    "receta": {"modelo": Receta, "form": RecetaForm, "nombre": "receta", "nueva": "Nueva receta"},
+    "forma": {"modelo": Forma, "form": FormaForm, "nombre": "forma", "nueva": "Nueva forma"},
+}
+
+
+@require_GET
+@equipo_requerido
+def recetario(request):
+    return render(request, "pedidos/equipo/recetario.html", {
+        "recetas": Receta.objects.annotate(n_pedidos=Count("pedidos")),
+        "formas": Forma.objects.annotate(n_pedidos=Count("pedidos")),
+        "puede_editar": puede_editar_recetario(request.user, request.grupos),
+    })
+
+
+@require_http_methods(["GET", "POST"])
+@equipo_requerido
+def recetario_item(request, tipo, pk=None):
+    conf = TIPOS_RECETARIO.get(tipo)
+    if conf is None:
+        raise Http404
+    modelo, Form = conf["modelo"], conf["form"]
+    obj = get_object_or_404(modelo, pk=pk) if pk else None
+    editar = puede_editar_recetario(request.user, request.grupos)
+    if not editar and (obj is None or request.method == "POST"):
+        messages.error(request, "Solo Atención de pedidos puede crear o editar el Recetario.")
+        return HttpResponseRedirect(reverse("pedidos:equipo_recetario"))
+
+    usados = obj.pedidos.count() if obj else 0
+    if request.method == "POST":
+        if request.POST.get("accion") == "eliminar" and obj:
+            if usados:
+                messages.error(request, f"{obj.nombre} ya se usó en {usados} pedido{'s' if usados != 1 else ''}: "
+                                        "no se borra, solo se deja de ofrecer (desmarca «Disponible para clientes»).")
+                return HttpResponseRedirect(reverse("pedidos:equipo_recetario_item", args=[tipo, obj.pk]))
+            LogEntry.objects.log_actions(user_id=request.user.pk, queryset=[obj], action_flag=DELETION,
+                                         change_message="Eliminada del Recetario")
+            nombre = obj.nombre
+            obj.delete()
+            messages.success(request, f"{nombre} se eliminó del Recetario.")
+            return HttpResponseRedirect(reverse("pedidos:equipo_recetario"))
+        form = Form(request.POST, instance=obj)
+        if form.is_valid():
+            nuevo = obj is None
+            obj = form.save()
+            LogEntry.objects.log_actions(user_id=request.user.pk, queryset=[obj],
+                                         action_flag=ADDITION if nuevo else CHANGE,
+                                         change_message="Creada en el Recetario" if nuevo else "Recetario actualizado",
+                                         single_object=True)
+            aviso = "" if obj.disponible else " Todavía no la ven los clientes: márcala «Disponible» cuando esté lista."
+            messages.success(request, f"{obj.nombre} guardada.{aviso}")
+            return HttpResponseRedirect(reverse("pedidos:equipo_recetario_item", args=[tipo, obj.pk]))
+    else:
+        # Lo nuevo nace pausado y al final de la lista del cliente.
+        siguiente_orden = (modelo.objects.aggregate(m=Max("orden"))["m"] or 0) + 1
+        form = Form(instance=obj) if obj else Form(initial={"disponible": False, "orden": siguiente_orden})
+
+    return render(request, "pedidos/equipo/recetario_item.html", {
+        "tipo": tipo, "conf": conf, "obj": obj, "form": form, "editar": editar, "usados": usados,
+        "editando": obj is None or (editar and (request.GET.get("editar") == "1" or request.method == "POST")),
     })

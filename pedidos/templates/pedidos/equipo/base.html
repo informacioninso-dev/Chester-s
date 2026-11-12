@@ -39,6 +39,8 @@
                class="inline-flex min-h-11 items-center border-b-[3px] px-4 text-sm font-extrabold transition {% if seccion == 'equipo' or seccion == 'equipo_pedido' %}border-collar-500 text-white{% else %}border-transparent text-stone-300 hover:text-white{% endif %}">Pedidos</a></li>
         <li><a href="{% url 'pedidos:equipo_perritos' %}" {% if seccion == 'equipo_perritos' or seccion == 'equipo_ficha' %}aria-current="page"{% endif %}
                class="inline-flex min-h-11 items-center border-b-[3px] px-4 text-sm font-extrabold transition {% if seccion == 'equipo_perritos' or seccion == 'equipo_ficha' %}border-collar-500 text-white{% else %}border-transparent text-stone-300 hover:text-white{% endif %}">Perritos</a></li>
+        <li><a href="{% url 'pedidos:equipo_recetario' %}" {% if 'recetario' in seccion %}aria-current="page"{% endif %}
+               class="inline-flex min-h-11 items-center border-b-[3px] px-4 text-sm font-extrabold transition {% if 'recetario' in seccion %}border-collar-500 text-white{% else %}border-transparent text-stone-300 hover:text-white{% endif %}">Recetario</a></li>
       </ul>
       {% endwith %}
     </nav>

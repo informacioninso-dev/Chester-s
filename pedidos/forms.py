@@ -3,7 +3,7 @@ import re
 from django import forms
 from django.utils import timezone
 
-from .models import Cotizacion, Estilo, LeadCumple, Receta
+from .models import Cotizacion, Forma, LeadCumple, Receta
 
 INPUT = (
     "block w-full rounded-2xl border border-stone-300 bg-white px-4 py-3.5 "
@@ -35,15 +35,22 @@ class PedidoForm(TelefonoMixin, forms.ModelForm):
     }
     TOTAL_PASOS = len(PASOS)
 
-    receta = forms.ChoiceField(
-        choices=Receta.choices,
+    # Spec 013: las opciones salen del Recetario; el cliente solo ve las disponibles.
+    receta = forms.ModelChoiceField(
+        queryset=Receta.objects.filter(disponible=True),
+        to_field_name="clave",
         widget=forms.RadioSelect,
-        error_messages={"required": "Elige una receta para continuar."},
+        empty_label=None,
+        error_messages={"required": "Elige una receta para continuar.",
+                        "invalid_choice": "Esa receta ya no está disponible. Elige otra."},
     )
-    estilo = forms.ChoiceField(
-        choices=Estilo.choices,
+    estilo = forms.ModelChoiceField(
+        queryset=Forma.objects.filter(disponible=True),
+        to_field_name="clave",
         widget=forms.RadioSelect,
-        error_messages={"required": "Elige un estilo para continuar."},
+        empty_label=None,
+        error_messages={"required": "Elige una forma para continuar.",
+                        "invalid_choice": "Esa forma ya no está disponible. Elige otra."},
     )
     acepta_datos = forms.BooleanField(
         error_messages={"required": "Marca la casilla de autorización para continuar."},

@@ -8,7 +8,7 @@
         {% if p.estado == 'nuevo' %}bg-collar-600 text-white{% elif p.estado == 'confirmado' %}bg-slate-900 text-white{% elif p.estado == 'en_preparacion' %}bg-crema-200 text-slate-900{% elif p.estado == 'entregado' %}bg-stone-200 text-slate-700{% else %}bg-stone-100 text-slate-500{% endif %}">{% if p.estado == 'en_preparacion' %}En cocina{% else %}{{ p.get_estado_display }}{% endif %}</span>
     </span>
     <span class="mt-0.5 block truncate text-sm text-slate-600">
-      <span class="{% if f.cuando.urgente %}font-bold text-collar-700{% endif %}">{% if en_tablero or vista == 'historial' or vista == 'asignados' %}{{ f.cuando.texto }} · {% endif %}{{ p.fecha_cumple|date:"D j \d\e M" }}</span>{% if p.hora_entrega %} · <strong class="text-slate-900">{{ p.hora_entrega|time:"H:i" }}</strong>{% endif %} · {{ p.get_receta_display }} · {{ p.get_estilo_display }}
+      <span class="{% if f.cuando.urgente %}font-bold text-collar-700{% endif %}">{% if en_tablero or vista == 'historial' or vista == 'asignados' %}{{ f.cuando.texto }} · {% endif %}{{ p.fecha_cumple|date:"D j \d\e M" }}</span>{% if p.hora_entrega %} · <strong class="text-slate-900">{{ p.hora_entrega|time:"H:i" }}</strong>{% endif %} · {{ p.receta.nombre }} · {{ p.estilo.nombre }}
     </span>
     {% if p.perrito.no_le_gusta or p.nota_familia or p.cocinero or p.repartidor %}
       <span class="mt-2 flex flex-wrap gap-1.5 text-xs font-bold">

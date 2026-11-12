@@ -1,0 +1,67 @@
+{% extends "pedidos/equipo/base.html" %}
+{% block titulo %}{% if obj %}{{ obj.nombre }}{% else %}{{ conf.nueva }}{% endif %} · Recetario{% endblock %}
+{% block contenido %}
+<a href="{% url 'pedidos:equipo_recetario' %}" class="inline-flex min-h-11 items-center gap-2 text-sm font-bold text-slate-600 transition hover:text-slate-900">
+  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 10H4m0 0 5-5m-5 5 5 5"/></svg>
+  Recetario
+</a>
+
+{% if editando %}
+  {# ── Crear o editar ── #}
+  <h1 class="mt-1 font-display text-3xl font-medium tracking-tight">{% if obj %}Editar {{ obj.nombre }}{% else %}{{ conf.nueva }}{% endif %}</h1>
+  {% if not obj %}<p class="mt-1 text-sm text-slate-600">Se crea pausada: complétala y márcala «Disponible» cuando esté lista para las familias.</p>{% endif %}
+  <form method="post" class="mt-6 space-y-5 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-stone-200 sm:p-6" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<p role="alert" class="rounded-2xl bg-collar-50 px-4 py-3 text-sm font-semibold text-collar-800">{{ form.non_field_errors.0 }}</p>{% endif %}
+    {% for field in form %}
+      {% if field.name == "disponible" %}
+        <label class="flex cursor-pointer items-start gap-3 rounded-2xl bg-crema-50 p-4 ring-1 ring-crema-200">
+          <input type="checkbox" name="disponible" id="{{ field.id_for_label }}" class="mt-0.5 h-5 w-5 shrink-0 accent-collar-600" {% if field.value %}checked{% endif %}>
+          <span><strong class="block">Disponible para clientes</strong><span class="text-sm text-slate-600">La ven en la página y en el chat de Melloco. Desmárcala para pausarla sin borrarla.</span></span>
+        </label>
+      {% else %}
+        <div>
+          {% if field.name == "ingredientes" or field.name == "como_armarla" %}<p class="mb-3 border-t border-stone-100 pt-5 text-xs font-extrabold uppercase tracking-[0.16em] text-slate-500">Para la cocina</p>{% endif %}
+          <label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-bold">{{ field.label|capfirst }}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="mt-1.5 text-sm text-slate-500">{{ field.help_text }}</p>{% endif %}
+          {% for e in field.errors %}<p class="mt-1.5 text-sm font-semibold text-collar-700">{{ e }}</p>{% endfor %}
+        </div>
+      {% endif %}
+    {% endfor %}
+    <div class="flex flex-wrap items-center gap-3 border-t border-stone-100 pt-5">
+      <button type="submit" class="min-h-12 rounded-full bg-slate-900 px-6 font-extrabold text-white transition hover:bg-slate-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/30">Guardar</button>
+      <a href="{% if obj %}{% url 'pedidos:equipo_recetario_item' tipo obj.pk %}{% else %}{% url 'pedidos:equipo_recetario' %}{% endif %}" class="inline-flex min-h-12 items-center rounded-full px-5 text-sm font-bold text-slate-600 transition hover:bg-stone-100">Cancelar</a>
+    </div>
+  </form>
+  {% if obj %}
+    <form method="post" class="mt-4" onsubmit="return confirm('¿Eliminar {{ obj.nombre|escapejs }} del Recetario?');">
+      {% csrf_token %}<input type="hidden" name="accion" value="eliminar">
+      {% if usados %}
+        <p class="text-sm text-slate-500">{{ obj.nombre }} ya se usó en {{ usados }} pedido{{ usados|pluralize }}: no se puede eliminar. Para dejar de ofrecerla, desmarca «Disponible para clientes».</p>
+      {% else %}
+        <button type="submit" class="min-h-11 rounded-full px-5 text-sm font-bold text-collar-700 ring-1 ring-collar-200 transition hover:bg-collar-50">Eliminar del Recetario</button>
+      {% endif %}
+    </form>
+  {% endif %}
+
+{% else %}
+  {# ── Ver (como la lee la cocina) ── #}
+  <section class="mt-1 rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-stone-200 sm:p-7" aria-labelledby="item-titulo">
+    <div class="flex items-start justify-between gap-3">
+      <p class="text-xs font-extrabold uppercase tracking-[0.16em] text-slate-500">{% if tipo == "receta" %}Receta{% else %}Forma{% endif %} · {{ usados }} pedido{{ usados|pluralize }}</p>
+      <span class="shrink-0 rounded-full px-3 py-1 text-xs font-extrabold {% if obj.disponible %}bg-slate-900 text-white{% else %}bg-stone-100 text-slate-500{% endif %}">{% if obj.disponible %}Disponible{% else %}Pausada{% endif %}</span>
+    </div>
+    <h1 id="item-titulo" class="mt-1 font-display text-4xl font-medium tracking-tight">{{ obj.nombre }}</h1>
+    {% if obj.descripcion %}<p class="mt-1 text-slate-600">“{{ obj.descripcion }}” <span class="text-sm text-slate-500">· lo que lee la familia</span></p>{% endif %}
+    {% if tipo == "forma" %}<p class="mt-1 text-sm text-slate-500">En el mensaje de WhatsApp: «{{ obj.frase }}».</p>{% endif %}
+    {% if obj.contiene %}
+      <p class="mt-4 rounded-2xl bg-collar-50 px-4 py-3 text-collar-800 ring-1 ring-collar-200"><strong class="font-extrabold">Contiene:</strong> {{ obj.contiene }}</p>
+    {% endif %}
+    {% if editar %}
+      <a href="?editar=1" class="mt-5 inline-flex min-h-11 items-center rounded-full bg-slate-900 px-5 text-sm font-extrabold text-white transition hover:bg-slate-700">Editar</a>
+    {% endif %}
+  </section>
+  {% if tipo == "receta" %}{% include "pedidos/equipo/como_se_hace.html" with receta=obj forma=None %}{% else %}{% include "pedidos/equipo/como_se_hace.html" with receta=None forma=obj %}{% endif %}
+{% endif %}
+{% endblock %}

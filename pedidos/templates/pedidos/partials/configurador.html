@@ -44,7 +44,8 @@
   {# ── Paso 2: Receta base ── #}
   {% elif paso == 2 %}
     <h3 data-foco tabindex="-1" class="text-balance font-display text-2xl font-medium tracking-tight focus:outline-none sm:text-3xl">Elige su receta base</h3>
-    <p class="mt-2 break-words text-slate-600">Dos recetas caseras, horneadas a pedido para {{ form.nombre_perro.value|default:"tu perrito" }}.</p>
+    <p class="mt-2 break-words text-slate-600">Recetas caseras, horneadas a pedido para {{ form.nombre_perro.value|default:"tu perrito" }}.</p>
+    {% if not hay_recetas %}{% include "pedidos/partials/recetario_vacio.html" %}{% endif %}
     <fieldset class="mt-8">
       <legend class="sr-only">Receta base</legend>
       <div class="grid gap-4 sm:grid-cols-2">
@@ -64,9 +65,7 @@
                 <path d="M25 13c-1.5-2 1.5-4 0-6M33 12c-1.5-2 1.5-4 0-6"/>
                 <path d="M23 55h18"/>
               </svg>
-              <span class="mt-5 font-display text-xl font-medium">{{ opcion.choice_label }}</span>
-              <span class="mt-1 text-sm leading-relaxed text-slate-600">Contundente y casera. La favorita de los más glotones.</span>
-            {% else %}
+            {% elif opcion.data.value == "manzana_zanahoria_yogur" %}
               <svg class="h-16 w-16" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M30 23c-6-4-16-2-17 9-1 10 6 21 12 21 3 0 4-1 5-1s2 1 5 1c6 0 13-11 12-21-1-11-11-13-17-9Z" fill="#EF3B36"/>
                 <path d="M30 23c0-4 1-7 3-9"/>
@@ -74,9 +73,16 @@
                 <path d="M47 50 58 27c1-2-1-4-3-3L46 37" fill="#F2994A"/>
                 <path d="M55 24c1-3 3-4 5-4M56 25c3-1 5 0 6 1"/>
               </svg>
-              <span class="mt-5 font-display text-xl font-medium">{{ opcion.choice_label }}</span>
-              <span class="mt-1 text-sm leading-relaxed text-slate-600">Fresca y ligera, con un toque cremoso de yogur.</span>
+            {% else %}
+              {# Recetas nuevas del Recetario: dibujo genérico de pastel. #}
+              <svg class="h-16 w-16" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 34h40v16a4 4 0 0 1-4 4H16a4 4 0 0 1-4-4Z" fill="#EBCFA8"/>
+                <path d="M12 34c0-6 9-10 20-10s20 4 20 10c-3 3-6 3-8 0-3 3-6 3-8 0-3 3-6 3-8 0-3 3-6 3-8 0-3 3-6 3-8 0Z" fill="#F4E5D2"/>
+                <path d="M32 24v-8"/><path d="M32 16c-2-2-2-5 0-7 2 2 2 5 0 7Z" fill="#EF3B36"/>
+              </svg>
             {% endif %}
+            <span class="mt-5 font-display text-xl font-medium">{{ opcion.choice_label }}</span>
+            {% if opcion.data.value.instance.descripcion %}<span class="mt-1 text-sm leading-relaxed text-slate-600">{{ opcion.data.value.instance.descripcion }}</span>{% endif %}
           </label>
         {% endfor %}
       </div>
@@ -93,6 +99,7 @@
   {% elif paso == 3 %}
     <h3 data-foco tabindex="-1" class="text-balance font-display text-2xl font-medium tracking-tight focus:outline-none sm:text-3xl">¿Qué forma tendrá?</h3>
     <p class="mt-2 text-slate-600">El toque final para la foto del cumpleaños.</p>
+    {% if not hay_formas %}{% include "pedidos/partials/recetario_vacio.html" %}{% endif %}
     <fieldset class="mt-8">
       <legend class="sr-only">Forma del pastel</legend>
       <div class="grid gap-4 sm:grid-cols-2">
@@ -112,17 +119,18 @@
                 </g>
               </svg>
             {% else %}
+              {# Redondo, y dibujo genérico para las formas nuevas del Recetario (sin el huesito encima). #}
               <svg class="h-28 w-40" viewBox="0 0 160 110" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
                 <ellipse cx="80" cy="90" rx="66" ry="11" fill="#fff"/>
                 <path d="M32 50v28c0 7 21 12 48 12s48-5 48-12V50" fill="#D4A373"/>
                 <path d="M32 50v9q6 9 12 1q6 9 12 1q6 9 12 1q6 9 12 1q6 9 12 1q6 9 12 1q6 9 12 1q6 9 12 1V50Z" fill="#F2DCC0"/>
                 <ellipse cx="80" cy="50" rx="48" ry="12" fill="#F2DCC0"/>
-                <path transform="translate(80 46) scale(.55)" fill="#fff" d="M-30 -9H30A12 12 0 1 1 42 0A12 12 0 1 1 30 9H-30A12 12 0 1 1 -42 0A12 12 0 1 1 -30 -9Z" stroke-width="4.5"/>
+                {% if opcion.data.value == "redondo" %}<path transform="translate(80 46) scale(.55)" fill="#fff" d="M-30 -9H30A12 12 0 1 1 42 0A12 12 0 1 1 30 9H-30A12 12 0 1 1 -42 0A12 12 0 1 1 -30 -9Z" stroke-width="4.5"/>{% endif %}
               </svg>
             {% endif %}
             </span>
             <span class="mt-5 font-display text-xl font-medium">{{ opcion.choice_label }}</span>
-            <span class="mt-1 text-sm text-slate-600">{% if opcion.data.value == "huesito" %}El clásico de Chester.{% else %}Elegante, con un huesito encima.{% endif %}</span>
+            {% if opcion.data.value.instance.descripcion %}<span class="mt-1 text-sm text-slate-600">{{ opcion.data.value.instance.descripcion }}</span>{% endif %}
           </label>
         {% endfor %}
       </div>

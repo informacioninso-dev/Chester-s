@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Cotizacion, LeadCumple, Perrito
+from .models import Cotizacion, Forma, LeadCumple, Perrito, Receta
 
 
 class WhatsAppClienteMixin:
@@ -51,3 +51,13 @@ class PerritoAdmin(WhatsAppClienteMixin, admin.ModelAdmin):
     list_filter = ("tamano",)
     search_fields = ("nombre", "familia", "telefono")
     readonly_fields = ("creado_en", "actualizado_en")
+
+
+@admin.register(Receta, Forma)
+class RecetarioAdmin(admin.ModelAdmin):
+    """Recetario (spec 013). El equipo lo edita en /equipo/recetario/; aquí, correcciones."""
+
+    list_display = ("nombre", "clave", "disponible", "orden", "actualizado_en")
+    list_editable = ("disponible", "orden")
+    search_fields = ("nombre", "clave")
+    readonly_fields = ("clave", "creado_en", "actualizado_en")

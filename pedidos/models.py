@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import timezone
+from django.utils.text import slugify
 
 telefono_validator = RegexValidator(
     regex=r"^\+?\d{9,15}$",
@@ -12,14 +13,72 @@ telefono_validator = RegexValidator(
 )
 
 
-class Receta(models.TextChoices):
-    CARNE_PURE = "carne_pure", "Carne y puré"
-    MANZANA_ZANAHORIA_YOGUR = "manzana_zanahoria_yogur", "Manzana, zanahoria y yogur"
+def _lineas(texto):
+    return [linea.strip(" -•	") for linea in (texto or "").splitlines() if linea.strip(" -•	")]
 
 
-class Estilo(models.TextChoices):
-    HUESITO = "huesito", "Huesito"
-    REDONDO = "redondo", "Redondo"
+class DelRecetario(models.Model):
+    """Lo común a recetas y formas del Recetario (spec 013): lo ve el cliente y lo sigue la cocina."""
+
+    clave = models.SlugField("clave", max_length=40, unique=True, editable=False)
+    nombre = models.CharField("nombre", max_length=80)
+    descripcion = models.CharField("descripción para el cliente", max_length=140, blank=True)
+    notas = models.TextField("notas para la cocina", blank=True, max_length=1000)
+    disponible = models.BooleanField("disponible para clientes", default=False, db_index=True)
+    orden = models.PositiveSmallIntegerField("orden", default=0)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+        ordering = ["orden", "nombre"]
+
+    def __str__(self):
+        return self.nombre
+
+    def save(self, *args, **kwargs):
+        if not self.clave:  # se fija al crear y no cambia: la usan el formulario, el chat y Binn
+            base = slugify(self.nombre).replace("-", "_")[:34] or "item"
+            clave, n = base, 2
+            while type(self).objects.filter(clave=clave).exists():
+                clave, n = f"{base}_{n}", n + 1
+            self.clave = clave
+        super().save(*args, **kwargs)
+
+
+class Receta(DelRecetario):
+    ingredientes = models.TextField("ingredientes", blank=True, max_length=2000,
+                                    help_text="Uno por línea, con su cantidad.")
+    pasos = models.TextField("pasos", blank=True, max_length=4000, help_text="Uno por línea, en orden.")
+    contiene = models.CharField("contiene (alérgenos)", max_length=200, blank=True,
+                                help_text="Ej.: Lácteos (yogur), huevo.")
+
+    class Meta(DelRecetario.Meta):
+        verbose_name = "receta"
+        verbose_name_plural = "recetas"
+
+    def lista_ingredientes(self):
+        return _lineas(self.ingredientes)
+
+    def lista_pasos(self):
+        return _lineas(self.pasos)
+
+
+class Forma(DelRecetario):
+    frase_mensaje = models.CharField("cómo se dice en el mensaje", max_length=80, blank=True,
+                                     help_text="Ej.: en forma de huesito")
+    como_armarla = models.TextField("cómo armarla", blank=True, max_length=2000,
+                                    help_text="Molde, decoración y terminado. Uno por línea.")
+
+    class Meta(DelRecetario.Meta):
+        verbose_name = "forma"
+        verbose_name_plural = "formas"
+
+    def frase(self):
+        return self.frase_mensaje or f"en forma de {self.nombre.lower()}"
+
+    def lista_como_armarla(self):
+        return _lineas(self.como_armarla)
 
 
 class EstadoPedido(models.TextChoices):
@@ -150,8 +209,8 @@ class Cotizacion(ConWhatsAppCliente, ConFichaDePerrito, SincronizableCRM):
     )
     nombre_perro = models.CharField("nombre del perrito", max_length=80)
     fecha_cumple = models.DateField("fecha del cumpleaños")
-    receta = models.CharField(max_length=40, choices=Receta.choices)
-    estilo = models.CharField(max_length=20, choices=Estilo.choices)
+    receta = models.ForeignKey(Receta, on_delete=models.PROTECT, related_name="pedidos", verbose_name="receta")
+    estilo = models.ForeignKey(Forma, on_delete=models.PROTECT, related_name="pedidos", verbose_name="forma")
     estado = models.CharField(
         max_length=20, choices=EstadoPedido.choices, default=EstadoPedido.NUEVO, db_index=True
     )
@@ -171,7 +230,7 @@ class Cotizacion(ConWhatsAppCliente, ConFichaDePerrito, SincronizableCRM):
         verbose_name_plural = "cotizaciones"
 
     def __str__(self):
-        return f"{self.nombre_perro} · {self.get_receta_display()} ({self.fecha_cumple:%d/%m/%Y})"
+        return f"{self.nombre_perro} · {self.receta.nombre} ({self.fecha_cumple:%d/%m/%Y})"
 
     def nombre_familia(self):
         return self.nombre_cliente
@@ -184,10 +243,10 @@ class Cotizacion(ConWhatsAppCliente, ConFichaDePerrito, SincronizableCRM):
             "telefono": self.telefono,
             "nombre_perro": self.nombre_perro,
             "fecha_cumple": self.fecha_cumple.isoformat(),
-            "receta": self.receta,
-            "receta_nombre": self.get_receta_display(),
-            "estilo": self.estilo,
-            "estilo_nombre": self.get_estilo_display(),
+            "receta": self.receta.clave,
+            "receta_nombre": self.receta.nombre,
+            "estilo": self.estilo.clave,
+            "estilo_nombre": self.estilo.nombre,
             "estado": self.estado,
             "estado_nombre": self.get_estado_display(),
             "nota_familia": self.nota_familia,

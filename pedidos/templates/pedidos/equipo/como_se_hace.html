@@ -1,0 +1,39 @@
+{# Cómo se hace (spec 013): la receta y la forma tal como las sigue la cocina. Recibe `receta` y/o `forma`. #}
+{% if receta %}
+<section aria-labelledby="receta-{{ receta.pk }}" class="mt-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-stone-200 sm:p-6">
+  <h2 id="receta-{{ receta.pk }}" class="font-display text-xl font-medium">Receta: {{ receta.nombre }}</h2>
+  {% if receta.lista_ingredientes %}
+    <h3 class="mt-4 text-xs font-extrabold uppercase tracking-[0.16em] text-slate-500">Ingredientes</h3>
+    <ul class="mt-2 space-y-1.5">
+      {% for i in receta.lista_ingredientes %}<li class="flex gap-2.5"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-collar-600" aria-hidden="true"></span><span class="min-w-0 break-words">{{ i }}</span></li>{% endfor %}
+    </ul>
+  {% endif %}
+  {% if receta.lista_pasos %}
+    <h3 class="mt-5 text-xs font-extrabold uppercase tracking-[0.16em] text-slate-500">Pasos</h3>
+    <ol class="mt-2 space-y-2.5">
+      {% for paso in receta.lista_pasos %}
+        <li class="flex gap-3"><span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-slate-900 text-sm font-extrabold text-white" aria-hidden="true">{{ forloop.counter }}</span><span class="min-w-0 break-words pt-0.5"><span class="sr-only">Paso {{ forloop.counter }}: </span>{{ paso }}</span></li>
+      {% endfor %}
+    </ol>
+  {% endif %}
+  {% if not receta.lista_ingredientes and not receta.lista_pasos %}
+    <p class="mt-3 rounded-2xl bg-crema-50 px-4 py-3 text-sm text-slate-700 ring-1 ring-crema-200">Esta receta aún no tiene ingredientes ni pasos escritos. Atención de pedidos puede completarla en el Recetario.</p>
+  {% endif %}
+  {% if receta.notas %}<p class="mt-4 whitespace-pre-line break-words text-sm text-slate-700"><strong>Notas:</strong> {{ receta.notas }}</p>{% endif %}
+</section>
+{% endif %}
+{% if forma %}
+<section aria-labelledby="forma-{{ forma.pk }}" class="mt-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-stone-200 sm:p-6">
+  <h2 id="forma-{{ forma.pk }}" class="font-display text-xl font-medium">Forma: {{ forma.nombre }}</h2>
+  {% if forma.lista_como_armarla %}
+    <ol class="mt-3 space-y-2.5">
+      {% for paso in forma.lista_como_armarla %}
+        <li class="flex gap-3"><span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-crema-200 text-sm font-extrabold text-slate-900" aria-hidden="true">{{ forloop.counter }}</span><span class="min-w-0 break-words pt-0.5"><span class="sr-only">Paso {{ forloop.counter }}: </span>{{ paso }}</span></li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <p class="mt-3 rounded-2xl bg-crema-50 px-4 py-3 text-sm text-slate-700 ring-1 ring-crema-200">Aún no está escrito cómo armarla. Atención de pedidos puede completarlo en el Recetario.</p>
+  {% endif %}
+  {% if forma.notas %}<p class="mt-4 whitespace-pre-line break-words text-sm text-slate-700"><strong>Notas:</strong> {{ forma.notas }}</p>{% endif %}
+</section>
+{% endif %}
