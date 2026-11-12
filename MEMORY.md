@@ -55,6 +55,8 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 
 - 2026-11-12 · **Cobrado va aparte del estado** (spec 015): a veces pagan un anticipo antes de entregar. Un pedido entregado y sin cobrar no se va al Historial; queda en "Por cobrar".
 
+- 2026-11-12 · Freno de ingreso (spec 016): 10 fallos por IP o 20 por usuario en 15 min bloquean 15 min. Usa la caché local: si gunicorn pasa a más de un proceso, hay que mover la caché a Redis o a la base, o el freno se reparte entre procesos.
+
 ## Pendientes conocidos
 
 - Revisar con un abogado el texto de `/privacidad/` (spec 001) y agregar razón social/RUC del responsable.

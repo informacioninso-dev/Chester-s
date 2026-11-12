@@ -27,6 +27,7 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from .forms import INPUT
+from .seguridad import FrenoDeIntentos
 from .models import Cotizacion, EstadoPedido, Forma, FormaPago, LeadCumple, Perrito, Receta
 
 ATENCION, COCINA, REPARTO = "Atención de pedidos", "Cocina", "Reparto"
@@ -100,8 +101,13 @@ def equipo_requerido(vista):
     return envoltura
 
 
-class IngresoSinMayusculas(AuthenticationForm):
-    """Spec 014: "Carla " entra como "carla". El equipo no es muy tecnológico."""
+class IngresoSinMayusculas(FrenoDeIntentos, AuthenticationForm):
+    """Spec 014: "Carla " entra como "carla". Spec 016: freno de intentos fallidos."""
+
+    error_messages = {
+        **AuthenticationForm.error_messages,
+        "invalid_login": "Usuario o contraseña incorrectos. Revisa la contraseña y vuelve a intentarlo.",
+    }
 
     def clean(self):
         escrito = " ".join((self.cleaned_data.get("username") or "").split())

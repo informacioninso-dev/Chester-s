@@ -13,7 +13,7 @@
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ next }}">
     {% if form.non_field_errors %}
-      <p role="alert" class="rounded-2xl bg-collar-50 px-4 py-3 text-sm font-semibold text-collar-800">Usuario o contraseña incorrectos. Revisa mayúsculas y vuelve a intentarlo.</p>
+      <p role="alert" class="rounded-2xl bg-collar-50 px-4 py-3 text-sm font-semibold text-collar-800">{{ form.non_field_errors.0 }}</p>
     {% endif %}
     <div>
       <label for="{{ form.username.id_for_label }}" class="mb-2 block text-sm font-bold">Usuario</label>

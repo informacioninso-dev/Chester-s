@@ -1477,3 +1477,51 @@ class CobroTests(TestCase):
         for dias, texto in {-1: "Hace 1 día", -2: "Hace 2 días"}.items():
             p = Cotizacion(fecha_cumple=hoy + datetime.timedelta(days=dias), estado="entregado")
             self.assertEqual(_cuando(p, hoy)["texto"], texto)
+
+
+class FrenoDeIngresoTests(TestCase):
+    """Spec 016: freno de intentos fallidos en el gestor y en el panel."""
+
+    ingresar = reverse("pedidos:equipo_ingresar")
+
+    def setUp(self):
+        cache.clear()
+        persona("carla", "Cocina")
+
+    def intento(self, clave="mala", usuario="carla", ip="1.2.3.4", url=None):
+        return self.client.post(url or self.ingresar, {"username": usuario, "password": clave}, REMOTE_ADDR=ip)
+
+    def test_diez_fallos_desde_una_conexion_bloquean_15_minutos(self):
+        r = self.intento()
+        self.assertContains(r, "Usuario o contraseña incorrectos.")
+        for _ in range(9):
+            self.intento()
+        r = self.intento(clave="clave-segura-123")  # la correcta, pero ya está bloqueada
+        self.assertContains(r, "Demasiados intentos fallidos.")
+        self.assertNotIn("_auth_user_id", self.client.session)
+        r = self.intento(clave="clave-segura-123", ip="5.6.7.8")  # otra conexión sí entra
+        self.assertRedirects(r, reverse("pedidos:equipo"), fetch_redirect_response=False)
+
+    def test_veinte_fallos_contra_un_usuario_lo_bloquean_desde_cualquier_lado(self):
+        for i in range(20):
+            self.intento(ip=f"9.9.9.{i}")
+        r = self.intento(clave="clave-segura-123", ip="7.7.7.7")
+        self.assertContains(r, "Demasiados intentos fallidos.")
+
+    def test_entrar_bien_reinicia_los_contadores(self):
+        for _ in range(9):
+            self.intento()
+        self.intento(clave="clave-segura-123")
+        self.client.logout()
+        for _ in range(9):
+            self.intento()
+        r = self.intento(clave="clave-segura-123")
+        self.assertRedirects(r, reverse("pedidos:equipo"), fetch_redirect_response=False)
+
+    def test_el_panel_tambien_frena(self):
+        User.objects.create_superuser("jefe", "", "clave-segura-123")
+        panel = reverse("admin:login")
+        for _ in range(10):
+            self.intento(usuario="jefe", url=panel)
+        r = self.intento(usuario="jefe", clave="clave-segura-123", url=panel)
+        self.assertContains(r, "Demasiados intentos fallidos.")

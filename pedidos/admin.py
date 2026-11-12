@@ -1,7 +1,16 @@
 from django.contrib import admin
+from django.contrib.admin.forms import AdminAuthenticationForm
 from django.utils.html import format_html
 
 from .models import Cotizacion, Forma, LeadCumple, Perrito, Receta
+from .seguridad import FrenoDeIntentos
+
+
+class IngresoPanel(FrenoDeIntentos, AdminAuthenticationForm):
+    """Spec 016: el panel también frena los intentos fallidos."""
+
+
+admin.site.login_form = IngresoPanel
 
 
 class WhatsAppClienteMixin:

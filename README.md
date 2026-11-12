@@ -55,7 +55,7 @@ Lo que sigue explica cómo hacerlo desde el panel de Django, por si hace falta:
 | `DJANGO_ALLOWED_HOSTS` | Dominios del sitio, separados por coma (ej. `chesters.ec,www.chesters.ec`). |
 | `DJANGO_CSRF_TRUSTED_ORIGINS` | Los mismos dominios con esquema (ej. `https://chesters.ec`). |
 | `DJANGO_BEHIND_PROXY=1` | Si un proxy o PaaS termina el HTTPS (Render, Railway, Nginx). |
-| `DJANGO_ADMIN_URL` | Ruta del panel (por defecto `admin/`). Conviene cambiarla en producción. |
+| `DJANGO_ADMIN_URL` | Ruta del panel (por defecto `admin/`). En producción va una ruta propia y difícil de adivinar (spec 016); se entra con el botón «Panel» del gestor. |
 | `DJANGO_HSTS_SECONDS` | Duración de HSTS (por defecto 30 días). `DJANGO_HSTS_SUBDOMAINS=1` y `DJANGO_HSTS_PRELOAD=1` solo cuando el dominio esté 100 % en HTTPS. |
 | `DJANGO_SSL_REDIRECT=0` | Solo si el proxy ya redirige a HTTPS por su cuenta. |
 | `BINN_API_TOKEN` | Activa la API de lectura para Binn (header `X-Binn-Token`). |
