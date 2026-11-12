@@ -3,7 +3,9 @@
 # El tráfico llega por el Caddy de Licitar (bloque chesters.binnso.com en su deploy/Caddyfile).
 
 services:
-  web:
+  chesters:
+    # Nunca "web": en la red licitar_default ese nombre es el de Licitar y Caddy
+    # le mandaría a Chester's el tráfico de licitar.binnso.com.
     build: .
     image: chesters:latest
     container_name: chesters-web
