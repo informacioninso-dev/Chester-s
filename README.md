@@ -22,7 +22,14 @@ Tests: `python manage.py test pedidos`
 | Variable | Para qué |
 |---|---|
 | `CHESTERS_WHATSAPP` | Número de Melloco, solo dígitos con código de país (ej. `593991234567`). **Obligatorio cambiarlo.** |
-| `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=0`, `DJANGO_ALLOWED_HOSTS` | Producción. |
+| `DJANGO_DEBUG=0` | Producción. Activa HTTPS obligatorio, cookies seguras y HSTS. |
+| `DJANGO_SECRET_KEY` | Obligatoria con `DJANGO_DEBUG=0`: sin ella el sitio no arranca. |
+| `DJANGO_ALLOWED_HOSTS` | Dominios del sitio, separados por coma (ej. `chesters.ec,www.chesters.ec`). |
+| `DJANGO_CSRF_TRUSTED_ORIGINS` | Los mismos dominios con esquema (ej. `https://chesters.ec`). |
+| `DJANGO_BEHIND_PROXY=1` | Si un proxy o PaaS termina el HTTPS (Render, Railway, Nginx). |
+| `DJANGO_ADMIN_URL` | Ruta del panel (por defecto `admin/`). Conviene cambiarla en producción. |
+| `DJANGO_HSTS_SECONDS` | Duración de HSTS (por defecto 30 días). `DJANGO_HSTS_SUBDOMAINS=1` y `DJANGO_HSTS_PRELOAD=1` solo cuando el dominio esté 100 % en HTTPS. |
+| `DJANGO_SSL_REDIRECT=0` | Solo si el proxy ya redirige a HTTPS por su cuenta. |
 | `BINN_API_TOKEN` | Activa la API de lectura para Binn (header `X-Binn-Token`). |
 | `BINN_WEBHOOK_URL` | Si se define, cada lead/cotización nueva se envía a Binn al instante. |
 | `BINN_WEBHOOK_SECRET` | Firma HMAC-SHA256 del webhook (header `X-Chesters-Signature: sha256=…`). |

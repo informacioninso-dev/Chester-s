@@ -19,9 +19,14 @@ Formato: `- AAAA-MM-DD · decisión — por qué`.
 - 2026-11-11 · El botón de la Ruleta dice "Guardar su cumpleaños", no "Girar la ruleta": no hay premio al azar y el texto no debe prometerlo. La ruleta solo gira al pasar el cursor o al enviar (pauta de accesibilidad de animaciones).
 - 2026-11-11 · El formulario de la Ruleta usa ids `ruleta_*`: convive en la página con el configurador, que tiene campos con el mismo nombre.
 - 2026-11-11 · Skills de revisión del proyecto en `.claude/skills/`: `web-design-guidelines` (Vercel, interfaz) y `ux-copy` (Anthropic, textos).
+- 2026-11-11 · Freno anti-spam sin dependencias (spec 002): 10 envíos guardados por IP cada 10 min con la caché de Django, más un campo trampa `sitio_web`. Los errores de validación no cuentan, para no castigar a quien se equivoca. Con varios procesos o servidores hay que pasar a una caché compartida (Redis).
+- 2026-11-11 · Al bot que llena el campo trampa se le responde como si todo saliera bien, para que no aprenda a esquivarlo.
+- 2026-11-11 · HSTS arranca en 30 días, sin subdominios ni preload (difícil de revertir); sus advertencias de `check --deploy` están silenciadas a propósito mientras sigan apagados.
+- 2026-11-11 · htmx se sirve desde `pedidos/static/pedidos/js/` (2.0.4, hash igual al SRI publicado), no desde unpkg.
 
 ## Pendientes conocidos
 
 - Compilar Tailwind en lugar del CDN.
 - Revisar con un abogado el texto de `/privacidad/` (spec 001) y agregar razón social/RUC del responsable.
 - Mover el webhook a una cola (Celery/RQ) si sube el volumen.
+- Content-Security-Policy: después de compilar Tailwind (spec 003) y sacar los `hx-on` en línea.

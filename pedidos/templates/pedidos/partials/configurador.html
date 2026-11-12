@@ -6,7 +6,7 @@
       hx-swap="innerHTML"
       hx-disabled-elt="find button"
       novalidate
-      class="aparecer rounded-[2rem] border border-stone-200 bg-stone-50 p-6 sm:p-10">
+      class="aparecer relative rounded-[2rem] border border-stone-200 bg-stone-50 p-6 sm:p-10">
   {% csrf_token %}
   <input type="hidden" name="paso" value="{{ paso }}">
   {% for nombre, valor in ocultos %}<input type="hidden" name="{{ nombre }}" value="{{ valor }}">{% endfor %}
@@ -153,6 +153,8 @@
       <span>Autorizo a Chester’s a usar mis datos para gestionar este pedido y contactarme por WhatsApp, conforme a la LOPDP y la <a href="{% url 'pedidos:privacidad' %}" target="_blank" rel="noopener" class="font-bold underline underline-offset-2 hover:text-slate-900">política de privacidad</a>. Puedo pedir su eliminación cuando quiera.</span>
     </label>
     {% if errores.acepta_datos %}<p id="error-acepta-pedido" class="mt-2 text-sm font-semibold text-collar-700">{{ errores.acepta_datos.0 }}</p>{% endif %}
+    {% include "pedidos/partials/campo_trampa.html" %}
+    {% if limite_envios == "configurador" %}{% include "pedidos/partials/limite_envios.html" %}{% endif %}
   {% endif %}
 
   {# Navegación. El botón principal va primero en el DOM para que "Enter" avance (flex-row-reverse). #}

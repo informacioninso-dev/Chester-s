@@ -1,8 +1,13 @@
 import datetime
 import json
+import os
+import subprocess
+import sys
+from pathlib import Path
 from unittest import mock
 from urllib.parse import parse_qs, urlparse
 
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -109,6 +114,9 @@ class ConfiguradorTests(TestCase):
 class ConfirmarTests(TestCase):
     url = reverse("pedidos:confirmar")
 
+    def setUp(self):
+        cache.clear()
+
     def datos(self, **extra):
         base = {
             "paso": 4, "nombre_perro": "Rocky", "fecha_cumple": "2099-12-15",
@@ -160,6 +168,9 @@ class ConfirmarTests(TestCase):
 
 class RuletaTests(TestCase):
     url = reverse("pedidos:ruleta")
+
+    def setUp(self):
+        cache.clear()
 
     def test_registra_lead_y_muestra_exito(self):
         r = self.client.post(self.url, {
@@ -225,3 +236,118 @@ class WebhookBinnTests(TestCase):
         self.assertEqual(json.loads(req.data)["evento"], "lead_cumple.creado")
         self.assertTrue(req.get_header("X-chesters-signature").startswith("sha256="))
         self.assertTrue(LeadCumple.objects.get().sincronizado_crm)
+
+
+# ---------------------------------------------------------------------------
+# Spec 002 · Seguridad
+# ---------------------------------------------------------------------------
+
+RAIZ = Path(__file__).resolve().parent.parent
+LEAD = {"nombre_humano": "Ana", "nombre_perro": "Luna", "fecha_cumple": "2021-03-10",
+        "telefono": "0991234567", "acepta_datos": "on"}
+PEDIDO = {"paso": 4, "nombre_perro": "Rocky", "fecha_cumple": "2099-12-15", "receta": "carne_pure",
+          "estilo": "huesito", "nombre_cliente": "Ana", "telefono": "0991234567", "acepta_datos": "on"}
+
+
+def correr_django(*args, **env):
+    """Ejecuta manage.py en un proceso aparte con las variables de entorno dadas."""
+    entorno = {k: v for k, v in os.environ.items() if not k.startswith("DJANGO_")}
+    entorno.update(env)
+    return subprocess.run([sys.executable, "manage.py", *args], cwd=RAIZ, env=entorno,
+                          capture_output=True, text=True, timeout=60)
+
+
+class ConfiguracionProduccionTests(TestCase):
+    def test_sin_secret_key_en_produccion_no_arranca(self):
+        r = correr_django("check", DJANGO_DEBUG="0")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("Define DJANGO_SECRET_KEY", r.stderr)
+
+    def test_check_deploy_sin_advertencias(self):
+        r = correr_django("check", "--deploy", "--fail-level", "WARNING",
+                          DJANGO_DEBUG="0", DJANGO_SECRET_KEY="k" * 60 + "-x_9#Q",
+                          DJANGO_ALLOWED_HOSTS="chesters.ec")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+    def test_admin_en_la_ruta_configurada(self):
+        from django.conf import settings
+        self.assertEqual(reverse("admin:index"), "/" + settings.ADMIN_URL)
+
+    def test_htmx_desde_estaticos_propios(self):
+        r = self.client.get(reverse("pedidos:index"))
+        self.assertContains(r, "/static/pedidos/js/htmx.min.js")
+        self.assertNotContains(r, "unpkg.com")
+
+
+@override_settings(CHESTERS_LIMITE_ENVIOS=2)
+class LimiteEnviosTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def test_ruleta_frena_al_pasar_el_limite(self):
+        for _ in range(2):
+            self.assertEqual(self.client.post(reverse("pedidos:ruleta"), LEAD, **HTMX).status_code, 200)
+        r = self.client.post(reverse("pedidos:ruleta"), LEAD, **HTMX)
+        self.assertEqual(r.status_code, 429)
+        self.assertContains(r, "Recibimos varios envíos seguidos", status_code=429)
+        self.assertContains(r, 'value="Luna"', status_code=429)  # no se pierde lo escrito
+        self.assertEqual(LeadCumple.objects.count(), 2)
+
+    def test_pedido_frena_al_pasar_el_limite(self):
+        for _ in range(2):
+            self.client.post(reverse("pedidos:confirmar"), PEDIDO, **HTMX)
+        r = self.client.post(reverse("pedidos:confirmar"), PEDIDO, **HTMX)
+        self.assertEqual(r.status_code, 429)
+        self.assertContains(r, "Recibimos varios envíos seguidos", status_code=429)
+        self.assertContains(r, 'value="Rocky"', status_code=429)
+        self.assertEqual(Cotizacion.objects.count(), 2)
+
+    def test_los_errores_de_validacion_no_cuentan(self):
+        for _ in range(5):
+            self.client.post(reverse("pedidos:ruleta"), {}, **HTMX)
+        self.assertEqual(self.client.post(reverse("pedidos:ruleta"), LEAD, **HTMX).status_code, 200)
+
+    @override_settings(DETRAS_DE_PROXY=True)
+    def test_detras_de_proxy_cuenta_la_ip_que_agrega_el_proxy(self):
+        for i in range(2):
+            self.client.post(reverse("pedidos:ruleta"), LEAD, HTTP_X_FORWARDED_FOR=f"1.1.1.{i}, 9.9.9.9", **HTMX)
+        r = self.client.post(reverse("pedidos:ruleta"), LEAD, HTTP_X_FORWARDED_FOR="5.5.5.5, 9.9.9.9", **HTMX)
+        self.assertEqual(r.status_code, 429)
+
+
+@override_settings(BINN_WEBHOOK_URL="https://binn.example/webhook")
+class CampoTrampaTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def test_ruleta_con_trampa_responde_bien_pero_no_guarda(self):
+        with mock.patch("pedidos.views.notificar_binn") as notificar:
+            r = self.client.post(reverse("pedidos:ruleta"), {**LEAD, "sitio_web": "http://spam"}, **HTMX)
+        self.assertContains(r, "¡Melloco ha guardado la fecha!")
+        self.assertEqual(LeadCumple.objects.count(), 0)
+        notificar.assert_not_called()
+
+    def test_pedido_con_trampa_responde_bien_pero_no_guarda(self):
+        with mock.patch("pedidos.views.notificar_binn") as notificar:
+            r = self.client.post(reverse("pedidos:confirmar"), {**PEDIDO, "sitio_web": "x"}, **HTMX)
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("abrirWhatsapp", r["HX-Trigger-After-Settle"])
+        self.assertEqual(Cotizacion.objects.count(), 0)
+        notificar.assert_not_called()
+
+    def test_formularios_incluyen_el_campo_trampa(self):
+        self.assertContains(self.client.get(reverse("pedidos:index")), 'name="sitio_web"', count=1)
+        r = self.client.post(reverse("pedidos:configurador"),
+                             {**PEDIDO, "paso": 3, "ir_a": 4}, **HTMX)
+        self.assertContains(r, 'name="sitio_web"')
+
+
+@override_settings(BINN_API_TOKEN="secreto")
+class ApiLimiteTests(TestCase):
+    def test_limite_fuera_de_rango_no_da_500(self):
+        LeadCumple.objects.create(nombre_humano="Ana", nombre_perro="Luna",
+                                  fecha_cumple=datetime.date(2021, 3, 10), telefono="0991234567")
+        for valor in ("-1", "0", "abc", "999999"):
+            r = self.client.get(reverse("pedidos:api_leads") + f"?limite={valor}", HTTP_X_BINN_TOKEN="secreto")
+            self.assertEqual(r.status_code, 200, valor)
+            self.assertEqual(len(r.json()["resultados"]), 1, valor)

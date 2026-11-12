@@ -13,6 +13,16 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
+
+def _env_bool(nombre, defecto="0"):
+    return os.environ.get(nombre, defecto) == "1"
+
+
+def _env_lista(nombre, defecto=""):
+    return [v.strip() for v in os.environ.get(nombre, defecto).split(",") if v.strip()]
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,16 +30,46 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    'DJANGO_SECRET_KEY',
-    'django-insecure-solo-para-desarrollo-cambiar-en-produccion',
-)
+# En desarrollo DEBUG va activo por defecto. Un despliegue sin variables de
+# entorno igual falla, porque ALLOWED_HOSTS solo acepta localhost.
+DEBUG = _env_bool('DJANGO_DEBUG', '1')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DJANGO_DEBUG', '1') == '1'
+# Con DEBUG apagado la clave es obligatoria: nunca se usa la de ejemplo.
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            'Define DJANGO_SECRET_KEY: con DJANGO_DEBUG=0 no se usa la clave de desarrollo.'
+        )
+    SECRET_KEY = 'django-insecure-solo-para-desarrollo'
 
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = _env_lista('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')
+
+# Dominios desde los que se envían formularios, con esquema. Ej.: https://chesters.ec
+CSRF_TRUSTED_ORIGINS = _env_lista('DJANGO_CSRF_TRUSTED_ORIGINS')
+
+# Detrás de un proxy o PaaS que termina el HTTPS (Render, Railway, Nginx…).
+DETRAS_DE_PROXY = _env_bool('DJANGO_BEHIND_PROXY')
+if DETRAS_DE_PROXY:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = _env_bool('DJANGO_SSL_REDIRECT', '1')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # 30 días para empezar; subirlo cuando todo el dominio funcione bien con HTTPS.
+    SECURE_HSTS_SECONDS = int(os.environ.get('DJANGO_HSTS_SECONDS', 60 * 60 * 24 * 30))
+    # Subdominios y preload quedan apagados hasta conocer el dominio final: la
+    # preload list de los navegadores es muy difícil de revertir. Se activan a mano.
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = _env_bool('DJANGO_HSTS_SUBDOMAINS')
+    SECURE_HSTS_PRELOAD = _env_bool('DJANGO_HSTS_PRELOAD')
+    SILENCED_SYSTEM_CHECKS = [
+        c for c, activo in (('security.W005', SECURE_HSTS_INCLUDE_SUBDOMAINS),
+                            ('security.W021', SECURE_HSTS_PRELOAD)) if not activo
+    ]
+
+# Ruta del panel de administración. Cambiarla reduce los intentos automáticos de login.
+ADMIN_URL = os.environ.get('DJANGO_ADMIN_URL', 'admin/').strip('/') + '/'
 
 
 # Application definition
@@ -138,6 +178,10 @@ CHESTERS_WHATSAPP = os.environ.get('CHESTERS_WHATSAPP', '593990000000')
 
 # Días antes del cumpleaños en que Melloco envía el regalo sorpresa.
 CHESTERS_DIAS_REGALO = 15
+
+# Freno contra spam: envíos guardados por IP y formulario dentro de la ventana (segundos).
+CHESTERS_LIMITE_ENVIOS = 10
+CHESTERS_VENTANA_ENVIOS = 10 * 60
 
 # Integración con el CRM Binn.
 #  - BINN_WEBHOOK_URL: si se define, cada lead/cotización nueva se envía (push)

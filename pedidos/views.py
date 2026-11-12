@@ -5,6 +5,7 @@ from functools import wraps
 from urllib.parse import quote
 
 from django.conf import settings
+from django.core.cache import cache
 from django.db import transaction
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
@@ -32,6 +33,42 @@ FRASE_ESTILO = {
 
 def es_htmx(request):
     return request.headers.get("HX-Request") == "true"
+
+
+# Nombre del campo trampa: está oculto para las personas y solo lo llenan los bots.
+CAMPO_TRAMPA = "sitio_web"
+
+
+def es_bot(request):
+    return bool(request.POST.get(CAMPO_TRAMPA, "").strip())
+
+
+def _ip(request):
+    """IP del visitante. Detrás de un proxy, la última de X-Forwarded-For es la que
+    agregó nuestro proxy; las anteriores las puede inventar el cliente."""
+    if settings.DETRAS_DE_PROXY:
+        reenviada = request.headers.get("X-Forwarded-For", "")
+        if reenviada:
+            return reenviada.split(",")[-1].strip()
+    return request.META.get("REMOTE_ADDR", "")
+
+
+class LimiteEnvios:
+    """Cuenta los envíos guardados por IP y formulario en una ventana fija."""
+
+    def __init__(self, request, formulario):
+        self.clave = f"envios:{formulario}:{_ip(request)}"
+
+    def superado(self):
+        return (cache.get(self.clave) or 0) >= settings.CHESTERS_LIMITE_ENVIOS
+
+    def sumar(self):
+        if cache.add(self.clave, 1, settings.CHESTERS_VENTANA_ENVIOS):
+            return
+        try:
+            cache.incr(self.clave)
+        except ValueError:  # la clave expiró entre add() e incr()
+            cache.set(self.clave, 1, settings.CHESTERS_VENTANA_ENVIOS)
 
 
 def _datos_pedido(request):
@@ -106,13 +143,13 @@ def url_whatsapp(cotizacion):
     return f"https://wa.me/{settings.CHESTERS_WHATSAPP}?text={quote(mensaje_whatsapp(cotizacion))}"
 
 
-def _render_parcial_o_pagina(request, parcial, contexto):
+def _render_parcial_o_pagina(request, parcial, contexto, status=200):
     """Con HTMX devuelve solo el fragmento; sin JavaScript, la página completa."""
     if es_htmx(request):
-        return render(request, parcial, contexto)
+        return render(request, parcial, contexto, status=status)
     pagina = _contexto_index()
     pagina.update(contexto)
-    return render(request, "pedidos/index.html", pagina)
+    return render(request, "pedidos/index.html", pagina, status=status)
 
 
 def _contexto_index():
@@ -185,9 +222,19 @@ def confirmar_pedido(request):
         ctx = _contexto_configurador(paso_error, datos, form=form)
         return _render_parcial_o_pagina(request, "pedidos/partials/configurador.html", ctx)
 
-    with transaction.atomic():
-        cotizacion = form.save()
-        notificar_binn(cotizacion)
+    limite = LimiteEnvios(request, "pedido")
+    if limite.superado():
+        ctx = _contexto_configurador(PedidoForm.TOTAL_PASOS, datos)
+        ctx.update(limite_envios="configurador", whatsapp=settings.CHESTERS_WHATSAPP)
+        return _render_parcial_o_pagina(request, "pedidos/partials/configurador.html", ctx, status=429)
+    limite.sumar()
+
+    if es_bot(request):
+        cotizacion = form.save(commit=False)  # se responde igual, pero no se guarda ni se avisa a Binn
+    else:
+        with transaction.atomic():
+            cotizacion = form.save()
+            notificar_binn(cotizacion)
 
     wa_url = url_whatsapp(cotizacion)
     if not es_htmx(request):
@@ -212,9 +259,19 @@ def registrar_lead(request):
     form = LeadCumpleForm(request.POST if request.method == "POST" else None)
     lead = None
     if request.method == "POST" and form.is_valid():
-        with transaction.atomic():
-            lead = form.save()
-            notificar_binn(lead)
+        limite = LimiteEnvios(request, "ruleta")
+        if limite.superado():
+            ctx = {"lead_form": form, "lead_ok": None, "limite_envios": "ruleta",
+                   "whatsapp": settings.CHESTERS_WHATSAPP, "hoy": timezone.localdate()}
+            return _render_parcial_o_pagina(request, "pedidos/partials/ruleta.html", ctx, status=429)
+        limite.sumar()
+
+        if es_bot(request):
+            lead = form.save(commit=False)  # se responde igual, pero no se guarda ni se avisa a Binn
+        else:
+            with transaction.atomic():
+                lead = form.save()
+                notificar_binn(lead)
         form = LeadCumpleForm()
 
     ctx = {
@@ -260,7 +317,7 @@ def _listar(request, modelo):
             return JsonResponse({"error": "Parámetro 'desde' inválido (usa ISO 8601)."}, status=400)
         qs = qs.filter(creado_en__gte=fecha)
     try:
-        limite = min(int(request.GET.get("limite", 200)), 1000)
+        limite = min(max(int(request.GET.get("limite", 200)), 1), 1000)
     except ValueError:
         limite = 200
     return JsonResponse({"resultados": [obj.to_crm() for obj in qs.order_by("creado_en")[:limite]]})

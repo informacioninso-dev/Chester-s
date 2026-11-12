@@ -17,7 +17,7 @@
   <form method="post" action="{% url 'pedidos:ruleta' %}"
         hx-post="{% url 'pedidos:ruleta' %}" hx-target="#ruleta-panel" hx-swap="innerHTML"
         hx-indicator="#ruleta-rueda" hx-disabled-elt="find button" novalidate
-        class="aparecer rounded-[2rem] bg-white p-6 text-slate-900 shadow-2xl sm:p-10">
+        class="aparecer relative rounded-[2rem] bg-white p-6 text-slate-900 shadow-2xl sm:p-10">
     {% csrf_token %}
     <div class="grid gap-5 sm:grid-cols-2">
       <div>
@@ -47,6 +47,8 @@
       <span>Autorizo a Chester’s a usar estos datos para contactarme por el cumpleaños de mi perrito, conforme a la LOPDP y la <a href="{% url 'pedidos:privacidad' %}" target="_blank" rel="noopener" class="font-bold underline underline-offset-2 hover:text-slate-900">política de privacidad</a>. Puedo pedir su eliminación cuando quiera.</span>
     </label>
     {% if lead_form.acepta_datos.errors %}<p id="error-acepta-ruleta" class="mt-2 text-sm font-semibold text-collar-700">{{ lead_form.acepta_datos.errors.0 }}</p>{% endif %}
+    {% include "pedidos/partials/campo_trampa.html" %}
+    {% if limite_envios == "ruleta" %}{% include "pedidos/partials/limite_envios.html" %}{% endif %}
 
     <button type="submit"
             class="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-collar-600 px-7 py-4 font-extrabold text-white shadow-lg shadow-collar-600/25 transition hover:bg-collar-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-collar-600/30">
